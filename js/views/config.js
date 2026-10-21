@@ -1,7 +1,8 @@
 // ============================================================
 // VIEW: CONFIGURAÇÕES
 // ============================================================
-import { S, saveCfg, loadCfg } from '../state.js'
+import { S } from '../state.js'
+import { saveCfg } from '../utils.js'
 import { sbUpdateUser } from '../supabase-client.js'
 import { toast, sanitizar, $, $$ } from '../utils.js'
 

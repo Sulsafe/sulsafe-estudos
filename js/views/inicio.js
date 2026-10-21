@@ -20,6 +20,7 @@ export function vInicio() {
     h += cCard('fa-tower-broadcast', 'Salas ao Vivo', 'Participe ao vivo', 'salas')
     h += cCard('fa-book', 'Catálogo de NRs', 'Consulte as 38 Normas', 'nrs')
     h += cCard('fa-robot', 'Assistente IA', 'Dúvidas sobre NRs 24/7', 'ia')
+    h += cCard('fa-comments', 'Fórum de Dúvidas', 'Comunidade & Instrutores', 'forum')
     if (r === 'aluno') {
         h += cCard('fa-file-lines', 'Meu Boletim', 'Acompanhe suas notas', 'boletim')
         h += cCard('fa-file-pdf', 'Minhas Provas', 'Envie sua prova', 'provas')

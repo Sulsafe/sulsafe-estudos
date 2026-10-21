@@ -6,8 +6,8 @@ import { ADMIN_EMAIL, uid, sanitizar, toast, handleError } from './utils.js'
 import { S } from './state.js'
 
 // Configurações
-const SUPABASE_URL = 'https://dhhvhiyoxadcwsfqlndw.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoaHZoaXlveGFkY3dzZnFsbmR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTQ0NzIsImV4cCI6MjA5NjQ5MDQ3Mn0.3-We2KnsGekUMrDrG3F0qrP1ZCSwkG6sXcDUQ-ajuAQ'
+const SUPABASE_URL = 'https://acqbidvknbqppkjidvsq.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjcWJpZHZrbmJxcHBramlkdnNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1Njc2NzgsImV4cCI6MjEwMDE0MzY3OH0.W-bAmATd7meg8RyWunmsgfN9nUxj18ya6d4AKx4aG7E'
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 export const STORAGE_BUCKET = 'arquivos'
@@ -17,8 +17,9 @@ export const STORAGE_BUCKET = 'arquivos'
 // ============================================================
 export async function sbGetUser(id) {
     try {
+        // AJUSTE: select('*') para evitar erro 500 de coluna
         const { data, error } = await sb.from('profiles')
-            .select('id, nome_completo, email, role, status, created_at')
+            .select('*')
             .eq('id', id)
             .single()
         if (error) throw error
@@ -40,8 +41,9 @@ export async function sbUpdateUser(id, dados) {
 
 export async function sbGetAllUsers(page = 0, limit = 20) {
     try {
+        // AJUSTE: select('*') para evitar erro 500 de coluna
         const { data, error, count } = await sb.from('profiles')
-            .select('id, nome_completo, email, role, status, created_at', { count: 'exact' })
+            .select('*', { count: 'exact' })
             .order('nome_completo')
             .range(page * limit, (page + 1) * limit - 1)
         if (error) throw error
@@ -54,7 +56,7 @@ export async function sbGetAllUsers(page = 0, limit = 20) {
 export async function sbGetAlunos() {
     try {
         const { data, error } = await sb.from('profiles')
-            .select('id, nome_completo, email, role, status, created_at')
+            .select('*')
             .eq('role', 'aluno')
             .order('nome_completo')
         if (error) throw error
@@ -67,10 +69,10 @@ export async function sbGetAlunos() {
 export async function sbGetPendentes() {
     try {
         const { data, error } = await sb.from('profiles')
-            .select('id, nome_completo, email, created_at')
+            .select('*')
             .eq('status', 'pendente')
             .eq('role', 'aluno')
-            .order('created_at', { ascending: true })
+            .order('criado_em', { ascending: true })
         if (error) throw error
         return { data, error: null }
     } catch (error) {
@@ -81,6 +83,16 @@ export async function sbGetPendentes() {
 export async function sbLiberarUsuario(id) {
     try {
         const { data, error } = await sb.from('profiles').update({ status: 'ativo' }).eq('id', id).select().single()
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbBloquearUsuario(id) {
+    try {
+        const { data, error } = await sb.from('profiles').update({ status: 'bloqueado' }).eq('id', id).select().single()
         if (error) throw error
         return { data, error: null }
     } catch (error) {
@@ -295,6 +307,19 @@ export async function sbGetProvasPendentes() {
     }
 }
 
+export async function sbGetProvasAluno(userId) {
+    try {
+        const { data, error } = await sb.from('provas')
+            .select('*')
+            .eq('usuario_id', userId)
+            .order('criado_em', { ascending: false })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 export async function sbCorrigirProva(provaId, nota, status = 'corrigido') {
     try {
         const { data, error } = await sb.from('provas')
@@ -358,6 +383,82 @@ export async function sbCriarNotificacao(userId, titulo, mensagem, link = null) 
     }
 }
 
+export async function sbGetNotificacoes(userId, limit = 10) {
+    try {
+        const { data, error } = await sb.from('notificacoes')
+            .select('*')
+            .eq('usuario_id', userId)
+            .order('criado_em', { ascending: false })
+            .limit(limit)
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbMarcarNotificacaoLida(notificacaoId) {
+    try {
+        const { data, error } = await sb.from('notificacoes')
+            .update({ lida: true })
+            .eq('id', notificacaoId)
+            .select()
+            .single()
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbMarcarTodasNotificacoesLidas(userId) {
+    try {
+        const { data, error } = await sb.from('notificacoes')
+            .update({ lida: true })
+            .eq('usuario_id', userId)
+            .eq('lida', false)
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+// ============================================================
+// FÓRUM DE DÚVIDAS (COMUNIDADE)
+// ============================================================
+export async function sbGetMensagensForum(nrId = null) {
+    try {
+        let query = sb.from('mensagens_forum')
+            .select('*, profiles(nome_completo, role)')
+            .order('criado_em', { ascending: false })
+        if (nrId) {
+            query = query.eq('nr_id', Number(nrId))
+        }
+        const { data, error } = await query
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCriarMensagemForum(topico, mensagem, nrId, userId) {
+    try {
+        const { data, error } = await sb.from('mensagens_forum').insert({
+            usuario_id: userId,
+            topico: sanitizar(topico),
+            mensagem: sanitizar(mensagem),
+            nr_id: nrId ? Number(nrId) : null,
+            status: 'aberta'
+        }).select().single()
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 // ============================================================
 // DASHBOARD
 // ============================================================
@@ -375,7 +476,7 @@ export async function sbGetRankingAlunos() {
     try {
         const { data, error } = await sb.from('view_ranking_alunos').select('*')
         if (error) throw error
-        return { data, error: null }
+        return { data: error ? null : data, error: null }
     } catch (error) {
         return { data: null, error }
     }

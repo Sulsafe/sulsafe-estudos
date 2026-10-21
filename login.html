@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SulSafe | Login</title>
+    <title>SulSafe | Portal do Aluno & Treinamentos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- CSS do Dashboard e Sistema Completo -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js para Métricas e Boletim -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -31,6 +38,14 @@
             justify-content: center;
             padding: 24px;
         }
+        body.dash-active {
+            display: block !important;
+            padding: 0 !important;
+            background: var(--bg, #f4f7f6) !important;
+        }
+        body.dash-active #authWrap {
+            display: none !important;
+        }
         .login-container {
             background: #fff;
             border-radius: 24px;
@@ -51,6 +66,7 @@
             background: var(--verde);
             padding: 8px;
             margin-bottom: 12px;
+            object-fit: contain;
         }
         .login-logo h1 {
             font-size: 28px;
@@ -80,6 +96,8 @@
             transition: all .25s;
             background: transparent;
             color: var(--texto-sec);
+            border: none;
+            cursor: pointer;
         }
         .tab-btn.active {
             background: #fff;
@@ -175,8 +193,8 @@
             opacity: .7;
         }
         .off { display: none !important; }
-        #authWrap { display: block; }
-        #appWrap { display: none; }
+        #authWrap { display: block; width: 100%; max-width: 440px; }
+        #appWrap { display: block; width: 100%; }
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -192,14 +210,15 @@
 </head>
 <body>
 
+<!-- TELA DE AUTENTICAÇÃO -->
 <div id="authWrap">
     <div class="login-container">
-        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Página Principal</a>
         
         <div class="login-logo">
             <img src="logo1.png" alt="SulSafe" onerror="this.style.display='none'">
             <h1>SulSafe</h1>
-            <p>Segurança do Trabalho</p>
+            <p>Plataforma de Estudos & Formação Técnica</p>
         </div>
 
         <div class="tabs">
@@ -212,16 +231,16 @@
             <form id="frmLogin">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="lEmail" placeholder="seu@email.com" required>
+                    <input type="email" id="lEmail" placeholder="seu@email.com" required autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label>Senha</label>
-                    <input type="password" id="lPass" placeholder="••••••••" required>
+                    <input type="password" id="lPass" placeholder="••••••••" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn"><i class="fas fa-right-to-bracket"></i> Entrar</button>
+                <button type="submit" class="btn"><i class="fas fa-right-to-bracket"></i> Acessar Painel</button>
             </form>
             <div class="form-footer">
-                <a href="#" onclick="window.recuperarSenha()">Esqueceu a senha?</a>
+                <a href="#" onclick="window.recuperarSenha()">Esqueceu sua senha?</a>
             </div>
         </div>
 
@@ -234,123 +253,64 @@
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="cEmail" placeholder="seu@email.com" required>
+                    <input type="email" id="cEmail" placeholder="seu@email.com" required autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label>Senha (mín. 6 caracteres)</label>
-                    <input type="password" id="cPass" placeholder="••••••••" required minlength="6">
+                    <input type="password" id="cPass" placeholder="••••••••" required minlength="6" autocomplete="new-password">
                 </div>
                 <div class="form-group">
                     <label>Confirmar senha</label>
-                    <input type="password" id="cPass2" placeholder="••••••••" required>
+                    <input type="password" id="cPass2" placeholder="••••••••" required autocomplete="new-password">
                 </div>
                 <div class="form-group">
                     <label class="terms-row">
                         <input type="checkbox" id="cTermos" required>
-                        Aceito os <a href="#" target="_blank">Termos de Uso</a> e a <a href="#" target="_blank">Política de Privacidade</a>
+                        Aceito os Termos de Uso e Política de Privacidade
                     </label>
                 </div>
-                <button type="submit" class="btn btn-gold"><i class="fas fa-user-plus"></i> Criar conta</button>
+                <button type="submit" class="btn btn-gold"><i class="fas fa-user-plus"></i> Criar Conta de Aluno</button>
             </form>
-            <div class="recaptcha-note">Protegido por reCAPTCHA</div>
+            <div class="recaptcha-note">Ambiente seguro SulSafe Treinamentos</div>
         </div>
     </div>
 </div>
 
+<!-- DASHBOARD DO ESTUDANTE / ADMIN (SPA) -->
 <div id="appWrap" class="off">
-    <!-- Dashboard será renderizado aqui -->
+    <div id="dash" class="on">
+        <aside id="appSidebar" class="sidebar"></aside>
+        <main id="appContent" class="main"></main>
+    </div>
+
+    <!-- Modais Globais -->
+    <div id="mdlBg" class="mdl-bg">
+        <div id="mdlBox" class="mdl"></div>
+    </div>
+
+    <!-- Modal de Videoaula Integrado -->
+    <div id="videoModal" class="mdl-bg">
+        <div class="mdl">
+            <div class="video-header">
+                <span id="videoModalTitle"><i class="fas fa-play-circle"></i> Videoaula</span>
+                <button class="mdl-x" onclick="window.fecharModalVideo()" title="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="video-wrapper">
+                <iframe id="videoIframe" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+            </div>
+            <div class="video-footer">
+                <span class="progress-text" id="videoModalInfo">SulSafe Educação</span>
+                <button class="btn-concluir show" id="btnConcluirAula" onclick="window.concluirAulaAtual()"><i class="fas fa-check"></i> Marcar como Concluída</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Global de Toasts -->
+    <div id="toast"></div>
 </div>
 
-<script type="importmap">
-{
-    "imports": {
-        "./js/": "./js/"
-    }
-}
-</script>
-
-<script type="module">
-import { S, registerView, setRenderSidebar, nav, loadCfg } from './js/state.js'
-import { sb, sbGetUser } from './js/supabase-client.js'
-import { handleLogin, handleCadastro, logout, recuperarSenha } from './js/auth.js'
-import { renderSB, renderV, enterDash, checkNotifs } from './js/app.js'
-import { toast, showT, $, $$ } from './js/utils.js'
-
-// Import views
-import { vInicio } from './js/views/inicio.js'
-import { vAdmin } from './js/views/admin.js'
-
-// Registrar views
-registerView('inicio', vInicio)
-registerView('admin', vAdmin)
-
-// Registrar views básicas (as outras serão carregadas depois)
-// Por enquanto, views vazias para não quebrar
-const viewsPlaceholder = ['videoaulas', 'materiais', 'salas', 'nrs', 'ia', 'boletim', 'provas', 'certificados', 'config', 'pendentes']
-viewsPlaceholder.forEach(v => {
-    registerView(v, () => `<div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando ${v}...</p></div>`)
-})
-
-setRenderSidebar(renderSB)
-
-// Tornar funções globais
-window.logout = logout
-window.recuperarSenha = recuperarSenha
-window.showT = showT
-window.nav = nav
-window.toast = toast
-
-// Event listeners
-document.getElementById('frmLogin')?.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    const email = document.getElementById('lEmail').value.trim().toLowerCase()
-    const password = document.getElementById('lPass').value
-    await handleLogin(email, password)
-})
-
-document.getElementById('frmCad')?.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    const nome = document.getElementById('cNome').value.trim()
-    const email = document.getElementById('cEmail').value.trim().toLowerCase()
-    const password = document.getElementById('cPass').value
-    const confirm = document.getElementById('cPass2').value
-    const termos = document.getElementById('cTermos').checked
-    await handleCadastro(nome, email, password, confirm, termos)
-})
-
-// Auto-login
-;(async function() {
-    try {
-        const { data: { session } } = await sb.auth.getSession()
-        if (session) {
-            const { data: user } = await sbGetUser(session.user.id)
-            if (user) {
-                S.user = user
-                localStorage.setItem('ss_user', JSON.stringify(user))
-                loadCfg()
-                enterDash()
-                return
-            }
-        }
-        const sessionData = localStorage.getItem('ss_session')
-        if (sessionData) {
-            const { id } = JSON.parse(sessionData)
-            const { data: user } = await sbGetUser(id)
-            if (user) {
-                S.user = user
-                localStorage.setItem('ss_user', JSON.stringify(user))
-                loadCfg()
-                enterDash()
-                return
-            }
-        }
-        document.getElementById('authWrap').classList.remove('off')
-    } catch (e) {
-        console.log('Auto-login:', e)
-        document.getElementById('authWrap').classList.remove('off')
-    }
-})()
-</script>
+<!-- Scripts Modularizados -->
+<script type="module" src="./js/main.js"></script>
 
 </body>
 </html>

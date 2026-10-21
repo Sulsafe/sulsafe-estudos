@@ -1,9 +1,9 @@
 // ============================================================
 // VIEW: ADMIN (MODO DEUS)
 // ============================================================
-import { S, role, isAdmin, uid, nav, fmtD } from '../state.js'
-import { sbGetDashboardMetrics, sbGetAllUsers, sbGetRankingAlunos, sbUpdateUser, sbLiberarUsuario } from '../supabase-client.js'
-import { toast, handleError, openMdl, closeMdl, $, $$ } from '../utils.js'
+import { S, nav, fmtD } from '../state.js'
+import { sbGetDashboardMetrics, sbGetAllUsers, sbGetRankingAlunos, sbUpdateUser, sbLiberarUsuario, sbBloquearUsuario } from '../supabase-client.js'
+import { role, isAdmin, uid, toast, handleError, openMdl, closeMdl, $, $$ } from '../utils.js'
 
 export function vAdmin() {
     if (!isAdmin()) return window.nav('inicio')
@@ -47,13 +47,16 @@ async function carregarAdminData() {
                 <td>${u.email}</td>
                 <td><span class="badge ${rc}">${u.role}</span></td>
                 <td><span class="badge ${st}">${u.status || 'pendente'}</span></td>
-                <td>${u.email !== 'sulsafetreinamentos@gmail.com' ? `
-                    <select onchange="changeRole('${u.id}',this.value)" style="background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--tx)">
-                        <option value="aluno" ${u.role === 'aluno' ? 'selected' : ''}>Aluno</option>
-                        <option value="professor" ${u.role === 'professor' ? 'selected' : ''}>Professor</option>
-                    </select>
-                    ${u.status === 'pendente' ? `<button class="btn btn-sm btn-p" onclick="window.liberarUsuario('${u.id}')"><i class="fas fa-check"></i></button>` : ''}
-                ` : '<span style="font-size:11px;color:var(--tx3)">Protegido</span>'}</td>
+                <td>
+                    ${u.email !== 'sulsafetreinamentos@gmail.com' ? `
+                        <select onchange="changeRole('${u.id}',this.value)" style="background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--tx)">
+                            <option value="aluno" ${u.role === 'aluno' ? 'selected' : ''}>Aluno</option>
+                            <option value="professor" ${u.role === 'professor' ? 'selected' : ''}>Professor</option>
+                        </select>
+                        ${u.status === 'pendente' ? `<button class="btn btn-sm btn-p" onclick="window.liberarUsuario('${u.id}')" style="margin-left:4px;"><i class="fas fa-check"></i> Aprovar</button>` : ''}
+                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" onclick="window.bloquearUsuario('${u.id}')" style="margin-left:4px;background:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
+                    ` : '<span style="font-size:11px;color:var(--tx3)">Protegido</span>'}
+                </td>
             </tr>`
         })
         h += `</tbody></table></div></div>`
@@ -124,6 +127,16 @@ window.liberarUsuario = async function(id) {
     if (error) { handleError(error); return }
     toast('Usuário liberado com sucesso!', 'success')
     carregarAdminData()
+}
+window.bloquearUsuario = async function(id) {
+    if (!confirm('Tem certeza que deseja bloquear o acesso deste usuário?')) return;
+    const { error } = await sbBloquearUsuario(id);
+    if (error) {
+        handleError(error);
+        return;
+    }
+    toast('Usuário bloqueado com sucesso!', 'warn');
+    carregarAdminData();
 }
 window.modalApagarTudo = modalApagarTudo
 window.execApagar = execApagar

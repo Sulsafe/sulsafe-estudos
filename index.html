@@ -525,6 +525,50 @@
         }
         .nr-card.hidden { display: none; }
 
+        /* Efeitos e animação de destaque nos botões CTA */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            transition: all .28s cubic-bezier(.2,.9,.4,1.1);
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+            transform: skewX(-20deg);
+            transition: 0.75s ease;
+            pointer-events: none;
+        }
+        .btn:hover::after {
+            left: 150%;
+        }
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+        .nr-card {
+            text-decoration: none;
+            position: relative;
+        }
+        .nr-arrow {
+            margin-left: auto;
+            color: var(--texto-ter);
+            font-size: 13px;
+            opacity: 0.35;
+            transform: translateX(-4px);
+            transition: all .25s ease;
+        }
+        .nr-card:hover .nr-arrow {
+            opacity: 1;
+            transform: translateX(0);
+            color: var(--verde);
+        }
+
+
         /* ============ COMO FUNCIONA ============ */
         .how { background: #fff; }
         .how-grid {
@@ -1699,13 +1743,14 @@ const NRS = [
     const grid = document.getElementById('nrGrid');
     if (!grid) return;
     grid.innerHTML = NRS.map(nr => `
-        <article class="nr-card reveal" data-cat="${nr.cat}" tabindex="0">
+        <a href="login.html" class="nr-card reveal" data-cat="${nr.cat}" tabindex="0" title="Acessar NR ${nr.n} — ${nr.nome}">
             <div class="nr-emoji" aria-hidden="true">${nr.emoji}</div>
             <div class="nr-info">
                 <div class="nr-num">NR ${nr.n}</div>
                 <div class="nr-name">${nr.nome}</div>
             </div>
-        </article>
+            <div class="nr-arrow"><i class="fas fa-chevron-right"></i></div>
+        </a>
     `).join('');
 })();
 
@@ -1785,11 +1830,24 @@ hamburger.addEventListener('click', () => {
 document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', (e) => {
         const id = a.getAttribute('href');
-        if (id.length > 1) {
+        if (id && id.length > 1) {
             const target = document.querySelector(id);
             if (target) {
                 e.preventDefault();
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const mobileNav = document.getElementById('mobileNav');
+                const hamburger = document.getElementById('hamburger');
+                if (mobileNav && mobileNav.classList.contains('open')) {
+                    mobileNav.classList.remove('open');
+                    if (hamburger) {
+                        hamburger.setAttribute('aria-expanded', 'false');
+                        hamburger.innerHTML = '<i class="fas fa-bars"></i>';
+                    }
+                }
+            }
+        }
+    });
+});
             }
         }
     });

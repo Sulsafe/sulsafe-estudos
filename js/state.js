@@ -4,15 +4,21 @@
 
 export const S = {
     user: null,
-    cfg: {},
+    cfg: {
+        tema: 'verde',
+        qual: 'auto',
+        speed: '1',
+        vol: 100,
+        notifs: true
+    },
     currentView: 'inicio',
     prevView: null,
     views: {},
     sidebar: null
 }
 
-// Lista das 38 NRs
-export const NRS = [
+// Lista das 38 NRs com aliases de compatibilidade (.n / .id e .nome / .nm)
+const NRS_BASE = [
     { n: 1,  nome: 'Disposições Gerais e Gerenciamento de Riscos', cat: 'gerais', emoji: '📋' },
     { n: 2,  nome: 'Inspeção Prévia', cat: 'gerais', emoji: '📋' },
     { n: 3,  nome: 'Embargo ou Interdição', cat: 'gerais', emoji: '📋' },
@@ -53,6 +59,48 @@ export const NRS = [
     { n: 38, nome: 'Limpeza Urbana e Resíduos Sólidos', cat: 'setoriais', emoji: '🚛' }
 ]
 
+export const NRS = NRS_BASE.map(item => ({
+    ...item,
+    id: item.n,
+    nm: item.nome
+}))
+
+// Exportar NRS como NRS para compatibilidade
+export { NRS as NRS_LIST }
+
+// Helper do UID do usuário atual
+export function uid() {
+    return S.user?.id || null
+}
+
+// Role helpers
+export function role() {
+    return S.user?.role || 'aluno'
+}
+
+export function isAdmin() {
+    return role() === 'admin'
+}
+
+export function isProf() {
+    return role() === 'professor'
+}
+
+export function canManage() {
+    const r = role()
+    return r === 'admin' || r === 'professor'
+}
+
+// Formatador de cards de estatística
+export function stC(v, l, ic) {
+    return `<div class="st"><div class="st-v">${v}</div><div class="st-l"><i class="fas ${ic}" style="margin-right:6px"></i>${l}</div></div>`
+}
+
+// Formatador de cards de navegação rápida
+export function cCard(ic, t, d, v) {
+    return `<div class="card" onclick="window.nav('${v}')"><div class="card-ic"><i class="fas ${ic}"></i></div><div class="card-t">${t}</div><div class="card-d">${d}</div></div>`
+}
+
 export function registerView(name, fn) {
     S.views[name] = fn
 }
@@ -68,9 +116,6 @@ export function fmtD(d) {
     return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-// Exportar NRS como NRS para compatibilidade
-export { NRS as NRS_LIST }
-
 // Função de navegação global
 export function nav(view) {
     S.prevView = S.currentView
@@ -79,15 +124,57 @@ export function nav(view) {
     renderView()
 }
 
-function renderView() {
+export function renderView() {
     const viewFn = S.views[S.currentView]
     if (!viewFn) return
     const content = document.getElementById('appContent')
-    if (content) {
-        content.innerHTML = viewFn()
-        // Re-attach event listeners if needed
+    if (!content) return
+
+    try {
+        const res = viewFn()
+        if (typeof res === 'string') {
+            content.innerHTML = res
+        } else if (res && typeof res.then === 'function') {
+            res.then(html => {
+                if (typeof html === 'string') {
+                    content.innerHTML = html
+                }
+            }).catch(err => {
+                console.error('Erro na view assíncrona:', err)
+            })
+        }
+    } catch (e) {
+        console.error('Erro ao renderizar view:', e)
     }
 }
 
-// Tornar nav global
+// Funções de configuração
+export function loadCfg() {
+    const saved = localStorage.getItem('ss_cfg')
+    if (!saved) return
+    try {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') {
+            S.cfg = { ...S.cfg, ...parsed }
+            if (S.cfg.tema && S.cfg.tema !== 'verde') {
+                document.body.className = 't-' + S.cfg.tema
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar configurações:', e)
+    }
+}
+
+export function saveCfg() {
+    localStorage.setItem('ss_cfg', JSON.stringify(S.cfg))
+}
+
+// Tornar helpers globais para facilitar eventos inline
 window.nav = nav
+window.uid = uid
+window.role = role
+window.isAdmin = isAdmin
+window.isProf = isProf
+window.canManage = canManage
+window.stC = stC
+window.cCard = cCard
