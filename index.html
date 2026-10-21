@@ -626,114 +626,6 @@
             display: block;
         }
 
-        /* ============ PLANOS ============ */
-        .planos {
-            background: linear-gradient(180deg, var(--verde-bg-2) 0%, #fff 100%);
-        }
-        .planos-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 28px;
-            align-items: stretch;
-            margin-top: 8px;
-        }
-        .plano {
-            background: #fff;
-            border: 1.5px solid var(--borda);
-            border-radius: var(--radius-lg);
-            padding: 36px 28px;
-            display: flex; flex-direction: column;
-            transition: all .3s;
-            position: relative;
-        }
-        .plano:hover {
-            transform: translateY(-6px);
-            box-shadow: var(--sombra-lg);
-        }
-        .plano.popular {
-            border: 2px solid var(--verde);
-            box-shadow: 0 18px 40px rgba(46,125,50,.18);
-            transform: scale(1.04);
-        }
-        .plano.popular:hover { transform: scale(1.04) translateY(-6px); }
-        .plano-badge {
-            position: absolute; top: -14px; left: 50%;
-            transform: translateX(-50%);
-            background: var(--grad-dourado);
-            color: var(--verde-escuro);
-            font-size: 11px; font-weight: 800;
-            letter-spacing: 1.5px; text-transform: uppercase;
-            padding: 7px 18px;
-            border-radius: 100px;
-            box-shadow: 0 4px 14px rgba(201,176,55,.4);
-            white-space: nowrap;
-        }
-        .plano-ic {
-            width: 52px; height: 52px;
-            border-radius: 14px;
-            background: var(--verde-bg);
-            color: var(--verde-escuro);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-            margin-bottom: 18px;
-        }
-        .plano.popular .plano-ic { background: var(--grad-verde); color: #fff; }
-        .plano h3 {
-            font-size: 22px; font-weight: 800;
-            margin-bottom: 6px;
-        }
-        .plano-desc {
-            font-size: 13.5px; color: var(--texto-ter);
-            margin-bottom: 20px;
-        }
-        .plano-preco {
-            display: flex; align-items: baseline; gap: 6px;
-            margin-bottom: 4px;
-        }
-        .plano-preco .cifra { font-size: 22px; font-weight: 600; color: var(--texto-sec); }
-        .plano-preco .valor {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 44px; font-weight: 900;
-            color: var(--texto);
-            letter-spacing: -1px;
-        }
-        .plano-preco .centavos { font-size: 18px; font-weight: 700; color: var(--texto); }
-        .plano-ciclo {
-            font-size: 13px; color: var(--texto-ter);
-            margin-bottom: 24px;
-            font-weight: 500;
-        }
-        .plano-eq {
-            font-size: 12px; color: var(--verde-escuro);
-            background: var(--verde-bg);
-            padding: 6px 12px;
-            border-radius: 100px;
-            display: inline-block;
-            margin-bottom: 24px;
-            font-weight: 600;
-        }
-        .plano-features {
-            flex: 1;
-            display: flex; flex-direction: column; gap: 12px;
-            margin-bottom: 28px;
-            padding-top: 20px;
-            border-top: 1px solid var(--borda-2);
-        }
-        .plano-features li {
-            display: flex; align-items: flex-start; gap: 10px;
-            font-size: 14px; color: var(--texto);
-            line-height: 1.4;
-        }
-        .plano-features li i {
-            color: var(--verde);
-            font-size: 13px;
-            margin-top: 4px;
-            flex-shrink: 0;
-        }
-        .plano-features li.off { color: var(--texto-ter); }
-        .plano-features li.off i { color: var(--borda); }
-        .plano .btn { width: 100%; }
-
         /* ============ FAQ ============ */
         .faq { background: var(--verde-bg-2); }
         .faq-list {
@@ -1217,7 +1109,6 @@
         <nav class="nav" aria-label="Navegação principal">
             <a href="#inicio">Início</a>
             <a href="#nrs">NRs</a>
-            <a href="#planos">Planos</a>
             <a href="#sobre">Sobre</a>
             <a href="#contato">Contato</a>
         </nav>
@@ -1233,7 +1124,6 @@
     <div class="mobile-nav" id="mobileNav" aria-hidden="true">
         <a href="#inicio">Início</a>
         <a href="#nrs">NRs</a>
-        <a href="#planos">Planos</a>
         <a href="#sobre">Sobre</a>
         <a href="#contato">Contato</a>
         <a href="login.html" class="btn btn-primary btn-block"><i class="fas fa-right-to-bracket"></i> Entrar</a>
@@ -1406,88 +1296,8 @@
             </div>
         </div>
     </div>
-</section>
 
-<!-- ============ PLANOS ============ -->
-<section class="section planos" id="planos">
-    <div class="container">
-        <div class="section-head reveal">
-            <span class="eyebrow"><i class="fas fa-tags"></i> Planos &amp; Preços</span>
-            <h2 class="section-title">Escolha o plano <span class="gradient-text">ideal para você</span></h2>
-            <p class="section-subtitle">Acesso a todas as 38 NRs, videoaulas, aulas ao vivo e certificado. Acesso imediato após confirmação do pagamento.</p>
-        </div>
-
-        <div class="planos-grid">
-            <article class="plano reveal">
-                <div class="plano-ic"><i class="fas fa-seedling"></i></div>
-                <h3>Mensal</h3>
-                <p class="plano-desc">Flexível para começar</p>
-                <div class="plano-preco">
-                    <span class="cifra">R$</span>
-                    <span class="valor">49</span><span class="centavos">,90</span>
-                </div>
-                <div class="plano-ciclo">por mês · cobrança mensal</div>
-                <ul class="plano-features">
-                    <li><i class="fas fa-check"></i> Acesso a todas as 38 NRs</li>
-                    <li><i class="fas fa-check"></i> Videoaulas em HD ilimitadas</li>
-                    <li><i class="fas fa-check"></i> Certificado reconhecido</li>
-                    <li><i class="fas fa-check"></i> Assistente de IA 24/7</li>
-                    <li class="off"><i class="fas fa-xmark"></i> Aulas ao vivo ilimitadas</li>
-                    <li class="off"><i class="fas fa-xmark"></i> Suporte prioritário</li>
-                </ul>
-                <a href="login.html" class="btn btn-outline btn-block">Assinar Mensal</a>
-            </article>
-
-            <article class="plano popular reveal d1">
-                <span class="plano-badge">★ Mais popular</span>
-                <div class="plano-ic"><i class="fas fa-fire"></i></div>
-                <h3>Trimestral</h3>
-                <p class="plano-desc">Melhor custo-benefício</p>
-                <div class="plano-preco">
-                    <span class="cifra">R$</span>
-                    <span class="valor">129</span><span class="centavos">,90</span>
-                </div>
-                <div class="plano-ciclo">a cada 3 meses · equivalente a</div>
-                <span class="plano-eq">R$ 43,30 / mês · economize 13%</span>
-                <ul class="plano-features">
-                    <li><i class="fas fa-check"></i> Acesso a todas as 38 NRs</li>
-                    <li><i class="fas fa-check"></i> Videoaulas em HD ilimitadas</li>
-                    <li><i class="fas fa-check"></i> Certificado reconhecido</li>
-                    <li><i class="fas fa-check"></i> Assistente de IA 24/7</li>
-                    <li><i class="fas fa-check"></i> Aulas ao vivo ilimitadas</li>
-                    <li class="off"><i class="fas fa-xmark"></i> Suporte prioritário</li>
-                </ul>
-                <a href="login.html" class="btn btn-primary btn-block">Assinar Trimestral</a>
-            </article>
-
-            <article class="plano reveal d2">
-                <div class="plano-ic"><i class="fas fa-crown"></i></div>
-                <h3>Anual</h3>
-                <p class="plano-desc">Máxima economia</p>
-                <div class="plano-preco">
-                    <span class="cifra">R$</span>
-                    <span class="valor">399</span><span class="centavos">,90</span>
-                </div>
-                <div class="plano-ciclo">por ano · equivalente a</div>
-                <span class="plano-eq">R$ 33,32 / mês · economize 33%</span>
-                <ul class="plano-features">
-                    <li><i class="fas fa-check"></i> Acesso a todas as 38 NRs</li>
-                    <li><i class="fas fa-check"></i> Videoaulas em HD ilimitadas</li>
-                    <li><i class="fas fa-check"></i> Certificado reconhecido</li>
-                    <li><i class="fas fa-check"></i> Assistente de IA 24/7</li>
-                    <li><i class="fas fa-check"></i> Aulas ao vivo ilimitadas</li>
-                    <li><i class="fas fa-check"></i> Suporte prioritário dedicado</li>
-                </ul>
-                <a href="login.html" class="btn btn-gold btn-block">Assinar Anual</a>
-            </article>
-        </div>
-        <p class="text-center reveal" style="margin-top:32px;font-size:13.5px;color:var(--texto-ter);">
-            <i class="fas fa-lock" style="color:var(--verde);"></i>&nbsp; Pagamento seguro via Mercado Pago · Pix, cartão ou boleto · Acesso imediato
-        </p>
-    </div>
-</section>
-
-<!-- ============ FAQ ============ -->
+    <!-- ============ FAQ ============ -->
 <section class="section faq" id="faq">
     <div class="container">
         <div class="section-head reveal">
@@ -1616,7 +1426,6 @@
                 <ul>
                     <li><a href="#inicio">Início</a></li>
                     <li><a href="#nrs">NRs</a></li>
-                    <li><a href="#planos">Planos</a></li>
                     <li><a href="#sobre">Sobre</a></li>
                     <li><a href="#faq">FAQ</a></li>
                 </ul>
@@ -1678,10 +1487,6 @@
                 <button class="mascote-opcao" data-acao="scroll" data-alvo="#nrs">
                     <span class="mascote-opcao-ic">📚</span>
                     <span>Ver cursos de NR</span>
-                </button>
-                <button class="mascote-opcao" data-acao="scroll" data-alvo="#planos">
-                    <span class="mascote-opcao-ic">💳</span>
-                    <span>Ver planos</span>
                 </button>
                 <button class="mascote-opcao" data-acao="scroll" data-alvo="#faq">
                     <span class="mascote-opcao-ic">❓</span>
@@ -1848,10 +1653,6 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
         }
     });
 });
-            }
-        }
-    });
-});
 
 /* ---- Mascote ---- */
 (function setupMascote() {
@@ -1893,41 +1694,5 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
 console.log('✨ SulSafe carregado!');
 
-// ===== JS DOS PLANOS =====
-document.querySelectorAll('.btn-assinar').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const plano = btn.dataset.plano;
-    const valor = btn.dataset.valor;
-    document.getElementById('modalPagamento').classList.add('open');
-    document.getElementById('nomePlanoModal').innerText = plano;
-    document.getElementById('valorPlanoModal').innerText = valor;
-    
-    // esconde conteúdo anterior do modal
-    document.getElementById('conteudoPIX').style.display = 'none';
-    document.getElementById('conteudoBoleto').style.display = 'none';
-  });
-});
-
-function gerarPIX() {
-  document.getElementById('conteudoPIX').style.display = 'block';
-  document.getElementById('conteudoBoleto').style.display = 'none';
-  document.getElementById('qrCodeImg').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PIX-PLANO-FAKE';
-  document.getElementById('copiaColaTexto').innerText = '00020126580014BR.GOV.BCB.PIX...VALOR' + document.getElementById('valorPlanoModal').innerText;
-  alert('PIX gerado! Status: Pendente');
-}
-
-function gerarBoletoOnline() {
-  document.getElementById('conteudoBoleto').style.display = 'block';
-  document.getElementById('conteudoPIX').style.display = 'none';
-  const valor = document.getElementById('valorPlanoModal').innerText.replace('.','');
-  document.getElementById('linhaBoletoTexto').innerText = '23790.00000 00000.000 00000.000 1 999900000' + valor;
-  document.getElementById('vencimentoBoleto').innerText = new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString('pt-BR');
-  alert('Boleto gerado! Marca como Pago no admin depois');
-}
-
-function fecharModalPag() {
-  document.getElementById('modalPagamento').classList.remove('open');
-}
-// ===== FIM JS DOS PLANOS =====
 </script>
 </body>
