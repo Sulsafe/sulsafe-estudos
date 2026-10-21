@@ -68,9 +68,9 @@ export function vForum() {
                 ${NRS.map(n => `<option value="${n.n}">NR ${n.n} — ${sanitizar(n.nome)}</option>`).join('')}
             </select>
             <div style="display:flex;gap:6px">
-                <button class="btn btn-sm btn-p btn-filtro-st on" data-st="todas" onclick="window.filtrarStatusForum('todas', this)">Todas</button>
-                <button class="btn btn-sm btn-s btn-filtro-st" data-st="aberta" onclick="window.filtrarStatusForum('aberta', this)">Abertas</button>
-                <button class="btn btn-sm btn-s btn-filtro-st" data-st="respondida" onclick="window.filtrarStatusForum('respondida', this)">Respondidas</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-p btn-filtro-st on" data-st="todas" onclick="window.filtrarStatusForum('todas', this)">Todas</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s btn-filtro-st" data-st="aberta" onclick="window.filtrarStatusForum('aberta', this)">Abertas</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s btn-filtro-st" data-st="respondida" onclick="window.filtrarStatusForum('respondida', this)">Respondidas</button>
             </div>
         </div>
 
@@ -240,7 +240,7 @@ function renderListaDuvidas() {
 
                 <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd2);padding-top:12px;font-size:12px;color:var(--tx3)">
                     <span><i class="fas fa-comments" style="color:var(--p);margin-right:4px"></i> Discussão acadêmica</span>
-                    <button class="btn btn-sm btn-s" onclick="window.abrirModalResponder('${p.id}', '${sanitizar(p.topico).replace(/'/g, "\\'")}')">
+                    <button class="btn btn-sm" style="width: auto; flex: none; btn-s" onclick="window.abrirModalResponder('${p.id}', '${sanitizar(p.topico).replace(/'/g, "\\'")}')">
                         <i class="fas fa-reply"></i> Responder / Comentar
                     </button>
                 </div>

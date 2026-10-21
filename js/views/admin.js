@@ -12,7 +12,7 @@ export function vAdmin() {
     h += `<div id="adminStats"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando dados...</p></div></div>`
     h += `<div class="ch-g"><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Alunos por Progresso</h3><canvas id="chartAdmProg" height="200"></canvas></div><div class="ch-b"><h3><i class="fas fa-chart-pie"></i> Distribuição de Roles</h3><canvas id="chartAdmRoles" height="200"></canvas></div></div>`
     h += `<div id="adminUsers"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando usuários...</p></div></div>`
-    h += `<div class="pnl" style="border:2px solid #D32F2F"><div class="pnl-h"><div class="pnl-t" style="color:#D32F2F"><i class="fas fa-skull-crossbones"></i> Zona de Perigo</div></div><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Apaga <strong>TODOS</strong> os dados da plataforma.</p><button class="btn btn-d" onclick="modalApagarTudo()"><i class="fas fa-bomb"></i> APAGAR TUDO</button></div>`
+    h += `<div class="pnl" style="border:2px solid #D32F2F"><div class="pnl-h"><div class="pnl-t" style="color:#D32F2F"><i class="fas fa-skull-crossbones"></i> Zona de Perigo</div></div><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Apaga <strong>TODOS</strong> os dados da plataforma.</p><button class="btn btn-d" style="width: auto; onclick="modalApagarTudo()"><i class="fas fa-bomb"></i> APAGAR TUDO</button></div>`
     
     setTimeout(carregarAdminData, 200)
     return h
@@ -54,7 +54,7 @@ async function carregarAdminData() {
                             <option value="professor" ${u.role === 'professor' ? 'selected' : ''}>Professor</option>
                         </select>
                         ${u.status === 'pendente' ? `<button class="btn btn-sm btn-p" onclick="window.liberarUsuario('${u.id}')" style="margin-left:4px;"><i class="fas fa-check"></i> Aprovar</button>` : ''}
-                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" onclick="window.bloquearUsuario('${u.id}')" style="margin-left:4px;background:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
+                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" style="width: auto; onclick="window.bloquearUsuario('${u.id}')" style="margin-left:4px;background:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
                     ` : '<span style="font-size:11px;color:var(--tx3)">Protegido</span>'}
                 </td>
             </tr>`

@@ -37,11 +37,11 @@ export function vVideoaulas() {
         <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
             <input class="search" id="buscaVideoaulas" placeholder="Buscar por número ou nome da NR (ex: Trabalho em Altura, NR 10)..." style="flex:2;min-width:240px;margin:0" oninput="filtrarVideoaulas()">
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button class="btn btn-sm btn-p filtro-va-btn on" data-filtro="all" onclick="filtrarCategoriaVa('all', this)">Todas (38)</button>
-                <button class="btn btn-sm btn-s filtro-va-btn" data-filtro="gerais" onclick="filtrarCategoriaVa('gerais', this)">Gerais</button>
-                <button class="btn btn-sm btn-s filtro-va-btn" data-filtro="especificas" onclick="filtrarCategoriaVa('especificas', this)">Específicas</button>
-                <button class="btn btn-sm btn-s filtro-va-btn" data-filtro="setoriais" onclick="filtrarCategoriaVa('setoriais', this)">Setoriais</button>
-                <button class="btn btn-sm btn-s filtro-va-btn" data-filtro="concluidas" onclick="filtrarCategoriaVa('concluidas', this)">Concluídas</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-p filtro-va-btn on" data-filtro="all" onclick="filtrarCategoriaVa('all', this)">Todas (38)</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s filtro-va-btn" data-filtro="gerais" onclick="filtrarCategoriaVa('gerais', this)">Gerais</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s filtro-va-btn" data-filtro="especificas" onclick="filtrarCategoriaVa('especificas', this)">Específicas</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s filtro-va-btn" data-filtro="setoriais" onclick="filtrarCategoriaVa('setoriais', this)">Setoriais</button>
+                <button class="btn btn-sm" style="width: auto; flex: none; btn-s filtro-va-btn" data-filtro="concluidas" onclick="filtrarCategoriaVa('concluidas', this)">Concluídas</button>
             </div>
         </div>
 
@@ -141,7 +141,7 @@ function renderGridVideoaulas() {
                     <div class="admin-area" style="background:var(--ip);padding:8px;border-radius:6px;margin:8px 0">
                         <label><i class="fas fa-link"></i> Link YouTube / Embed</label>
                         <input type="text" class="input-link-nr" placeholder="https://youtube.com/embed/..." value="${sanitizar(link)}">
-                        <button class="btn btn-sm btn-p btn-block" onclick="salvarLinkNr(${nr.n}, this)">
+                        <button class="btn btn-sm" style="width: auto; flex: none; btn-p btn-block" onclick="salvarLinkNr(${nr.n}, this)">
                             <i class="fas fa-save"></i> ${link ? 'Atualizar Link' : 'Salvar Link'}
                         </button>
                     </div>
