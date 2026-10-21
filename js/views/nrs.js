@@ -13,11 +13,11 @@ export function vNRs() {
     let h = `<div class="btn-back" onclick="nav('inicio')"><i class="fas fa-arrow-left"></i> Voltar</div>`
     h += `<h2 class="wc">Catálogo de NRs</h2><p class="wcs">Consulte todas as 38 Normas Regulamentadoras.</p>`
     h += `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
-        <button class="btn btn-sm btn-p" onclick="filterNR('all')">Todas</button>
-        <button class="btn btn-sm btn-s" onclick="filterNR('gerais')">Gerais</button>
-        <button class="btn btn-sm btn-s" onclick="filterNR('especificas')">Específicas</button>
-        <button class="btn btn-sm btn-s" onclick="filterNR('saude')">Saúde</button>
-        <button class="btn btn-sm btn-s" onclick="filterNR('setoriais')">Setoriais</button>
+        <button class="btn btn-sm btn-p" style="width:auto;flex:none;" onclick="filterNR('all')">Todas</button>
+        <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('gerais')">Gerais</button>
+        <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('especificas')">Específicas</button>
+        <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('saude')">Saúde</button>
+        <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('setoriais')">Setoriais</button>
     </div>`
     h += `<input class="search" placeholder="Buscar NR..." oninput="filterNRT(this.value)">
     <div class="nr-g" id="nrGrid">`
