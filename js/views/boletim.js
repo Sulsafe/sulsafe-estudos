@@ -97,7 +97,12 @@ async function renderNotasAl() {
     const { data: alunos } = await sbGetAlunos()
     const al = (alunos || []).find(u => u.id === aid)
     
-    let h = `<div class="pnl"><div class="pnl-h"><div class="pnl-t"><i class="fas fa-user-graduate"></i> ${sanitizar(al?.nome_completo || 'Aluno')}</div><button class="btn btn-p btn-sm" onclick="modalNota('${aid}')"><i class="fas fa-plus"></i> Lançar</button></div>`
+    // --- ALTERAÇÃO AQUI: Adicionado flexbox para alinhar o nome à esquerda e o botão à direita ---
+    let h = `<div class="pnl"><div class="pnl-h" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div class="pnl-t"><i class="fas fa-user-graduate"></i> ${sanitizar(al?.nome_completo || 'Aluno')}</div>
+        <button class="btn btn-p btn-sm" style="width: auto;" onclick="modalNota('${aid}')"><i class="fas fa-plus"></i> Lançar</button>
+    </div>`
+    
     if (!notas || notas.length === 0) {
         h += `<div class="empty" style="padding:30px"><p>Nenhuma nota lançada para este aluno.</p></div>`
     } else {
