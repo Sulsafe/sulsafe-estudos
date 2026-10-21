@@ -18,6 +18,7 @@ import { vCerts } from './views/certificados.js'
 import { vAdmin } from './views/admin.js'
 import { vConfig } from './views/config.js'
 import { vPendentes } from './views/pendentes.js'
+import { vProfessor } from './views/professor.js'
 import { vForum } from './views/forum.js'
 
 // Views de catálogo, player e materiais
@@ -38,6 +39,7 @@ registerView('certificados', vCerts)
 registerView('admin', vAdmin)
 registerView('config', vConfig)
 registerView('pendentes', vPendentes)
+registerView('professor', vProfessor)
 
 setRenderSidebar(renderSB)
 

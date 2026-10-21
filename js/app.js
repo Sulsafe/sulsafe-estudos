@@ -112,6 +112,10 @@ export function renderSB() {
         academicItems.push({ id: 'certificados', icon: 'fa-award', label: 'Certificados' })
     }
 
+    if (r === 'professor' || r === 'admin') {
+        academicItems.push({ id: 'professor', icon: 'fa-chalkboard-user', label: 'Área do Professor' })
+    }
+
     if (r === 'admin') {
         academicItems.push({ id: 'pendentes', icon: 'fa-user-clock', label: 'Aprovações' })
         academicItems.push({ id: 'admin', icon: 'fa-shield-halved', label: 'Modo Deus' })

@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // VIEW: VIDEOAULAS (Estudo por NR e Player Integrado)
 // ============================================================
 
@@ -141,7 +141,7 @@ function renderGridVideoaulas() {
                     <div class="admin-area" style="background:var(--ip);padding:8px;border-radius:6px;margin:8px 0">
                         <label><i class="fas fa-link"></i> Link YouTube / Embed</label>
                         <input type="text" class="input-link-nr" placeholder="https://youtube.com/embed/..." value="${sanitizar(link)}">
-                        <button class="btn btn-sm" style="width: auto; flex: none; btn-p btn-block" onclick="salvarLinkNr(${nr.n}, this)">
+                        <button class="btn btn-sm btn-p btn-block" style="width:auto;flex:none;" onclick="salvarLinkNr(${nr.n}, this)">
                             <i class="fas fa-save"></i> ${link ? 'Atualizar Link' : 'Salvar Link'}
                         </button>
                     </div>

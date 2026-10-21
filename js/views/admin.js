@@ -1,4 +1,4 @@
-// ============================================================
+﻿﻿﻿﻿﻿﻿﻿// ============================================================
 // VIEW: ADMIN (MODO DEUS)
 // ============================================================
 import { S, nav, fmtD } from '../state.js'
@@ -10,9 +10,9 @@ export function vAdmin() {
     let h = `<div class="btn-back" onclick="window.nav('inicio')"><i class="fas fa-arrow-left"></i> Voltar</div>`
     h += `<div class="god-hd"><h2><i class="fas fa-shield-halved"></i> Modo Deus</h2><p>Controle total — ${S.user.email}</p></div>`
     h += `<div id="adminStats"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando dados...</p></div></div>`
-    h += `<div class="ch-g"><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Alunos por Progresso</h3><canvas id="chartAdmProg" height="200"></canvas></div><div class="ch-b"><h3><i class="fas fa-chart-pie"></i> Distribuição de Roles</h3><canvas id="chartAdmRoles" height="200"></canvas></div></div>`
+    h += `<div class="ch-g"><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Alunos por Progresso</h3><canvas id="chartAdmProg" height="200"></canvas></div><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Distribuição de Roles</h3><canvas id="chartAdmRoles" height="200"></canvas></div></div>`
     h += `<div id="adminUsers"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando usuários...</p></div></div>`
-    h += `<div class="pnl" style="border:2px solid #D32F2F"><div class="pnl-h"><div class="pnl-t" style="color:#D32F2F"><i class="fas fa-skull-crossbones"></i> Zona de Perigo</div></div><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Apaga <strong>TODOS</strong> os dados da plataforma.</p><button class="btn btn-d" style="width: auto; onclick="modalApagarTudo()"><i class="fas fa-bomb"></i> APAGAR TUDO</button></div>`
+    h += `<div class="pnl" style="border:2px solid #D32F2F"><div class="pnl-h"><div class="pnl-t" style="color:#D32F2F"><i class="fas fa-skull-crossbones"></i> Zona de Perigo</div></div><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Apaga <strong>TODOS</strong> os dados da plataforma.</p><button class="btn btn-d" style="width: auto;" onclick="modalApagarTudo()"><i class="fas fa-bomb"></i> APAGAR TUDO</button></div>`
     
     setTimeout(carregarAdminData, 200)
     return h
@@ -54,7 +54,7 @@ async function carregarAdminData() {
                             <option value="professor" ${u.role === 'professor' ? 'selected' : ''}>Professor</option>
                         </select>
                         ${u.status === 'pendente' ? `<button class="btn btn-sm btn-p" onclick="window.liberarUsuario('${u.id}')" style="margin-left:4px;"><i class="fas fa-check"></i> Aprovar</button>` : ''}
-                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" style="width: auto; onclick="window.bloquearUsuario('${u.id}')" style="margin-left:4px;background:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
+                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" style="width:auto;flex:none;margin-left:4px;background:#f59e0b;color:white;" onclick="window.bloquearUsuario('${u.id}')">nd:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
                     ` : '<span style="font-size:11px;color:var(--tx3)">Protegido</span>'}
                 </td>
             </tr>`
@@ -108,18 +108,91 @@ async function drawChartAdmin() {
         })
         if (window.charts && window.charts.admProg) try { window.charts.admProg.destroy() } catch (e) {}
         window.charts = window.charts || {}
-        window.charts.admProg = new Chart(cv1, { type: 'bar', data: { labels: ['0%', '1-50%', '51-80%', '81-100%'], datasets: [{ label: 'Alunos', data: [p0, p1, p2, p3], backgroundColor: ['rgba(211,47,47,.7)', 'rgba(255,152,0,.7)', 'rgba(21,101,192,.7)', 'rgba(46,125,50,.7)'], borderRadius: 6 }] }, options: { responsive: true, plugins: { legend: { display: false } } } })
+        window.charts.admProg = new Chart(cv1, {
+            type: 'bar',
+            data: {
+                labels: ['Não iniciado', '1–50%', '51–80%', '81–100%'],
+                datasets: [{
+                    label: 'Alunos',
+                    data: [p0, p1, p2, p3],
+                    backgroundColor: ['rgba(180,50,50,0.65)', 'rgba(220,150,30,0.65)', 'rgba(46,125,50,0.50)', 'rgba(46,125,50,0.85)'],
+                    borderColor: ['rgba(180,50,50,1)', 'rgba(200,130,10,1)', 'rgba(46,100,50,1)', 'rgba(30,100,40,1)'],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx =>  + '' +  $ + '{ctx.parsed.y}' + ' aluno(s)' + '' +  } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: 'rgba(100,100,100,0.7)' },
+                        grid: { color: 'rgba(200,210,205,0.3)' }
+                    },
+                    x: {
+                        ticks: { color: 'rgba(60,80,70,0.85)' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        })
     }
     if (cv2 && users) {
         const rc = { admin: 0, professor: 0, aluno: 0 }
         users.forEach(u => { rc[u.role] = (rc[u.role] || 0) + 1 })
         if (window.charts && window.charts.admRoles) try { window.charts.admRoles.destroy() } catch (e) {}
         window.charts = window.charts || {}
-        window.charts.admRoles = new Chart(cv2, { type: 'doughnut', data: { labels: ['Admin', 'Professor', 'Aluno'], datasets: [{ data: [rc.admin, rc.professor, rc.aluno], backgroundColor: ['rgba(201,176,55,.8)', 'rgba(46,125,50,.8)', 'rgba(21,101,192,.8)'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } })
+        window.charts.admRoles = new Chart(cv2, {
+            type: 'bar',
+            data: {
+                labels: ['Admins', 'Professores', 'Alunos'],
+                datasets: [{
+                    label: 'Usuários por Role',
+                    data: [rc.admin, rc.professor, rc.aluno],
+                    backgroundColor: ['rgba(201,176,55,0.75)', 'rgba(46,125,50,0.75)', 'rgba(100,130,110,0.65)'],
+                    borderColor: ['rgba(201,176,55,1)', 'rgba(46,125,50,1)', 'rgba(80,110,90,1)'],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx =>  + '' +  $ + '{ctx.parsed.x}' + ' usuário(s)' + '' +  } }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: 'rgba(100,100,100,0.7)' },
+                        grid: { color: 'rgba(200,210,205,0.3)' }
+                    },
+                    y: {
+                        ticks: { color: 'rgba(60,80,70,0.85)', font: { weight: '600' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        })
     }
 }
 
-function stC(v, l, ic) { return `<div class="st"><div class="st-v">${v}</div><div class="st-l"><i class="fas ${ic}" style="margin-right:4px"></i>${l}</div></div>` }
+function stC(v, l, ic) {
+    return `<div class="st-mod">
+        <div class="st-mod-ic"><i class="fas ${ic}"></i></div>
+        <div class="st-mod-info">
+            <div class="st-mod-v">${v}</div>
+            <div class="st-mod-l">${l}</div>
+        </div>
+    </div>`
+}
 
 window.changeRole = changeRole
 window.liberarUsuario = async function(id) {
