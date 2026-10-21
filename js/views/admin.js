@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿// ============================================================
+﻿﻿// ============================================================
 // VIEW: ADMIN (MODO DEUS)
 // ============================================================
 import { S, nav, fmtD } from '../state.js'
@@ -54,7 +54,7 @@ async function carregarAdminData() {
                             <option value="professor" ${u.role === 'professor' ? 'selected' : ''}>Professor</option>
                         </select>
                         ${u.status === 'pendente' ? `<button class="btn btn-sm btn-p" onclick="window.liberarUsuario('${u.id}')" style="margin-left:4px;"><i class="fas fa-check"></i> Aprovar</button>` : ''}
-                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" style="width:auto;flex:none;margin-left:4px;background:#f59e0b;color:white;" onclick="window.bloquearUsuario('${u.id}')">nd:#f59e0b;color:white;"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
+                        ${u.status === 'ativo' ? `<button class="btn btn-sm btn-warning" style="width:auto;flex:none;margin-left:4px;background:#f59e0b;color:white;" onclick="window.bloquearUsuario('${u.id}')"><i class="fas fa-ban"></i> Bloquear</button>` : ''}
                     ` : '<span style="font-size:11px;color:var(--tx3)">Protegido</span>'}
                 </td>
             </tr>`
@@ -126,7 +126,7 @@ async function drawChartAdmin() {
                 responsive: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx =>  + '' +  $ + '{ctx.parsed.y}' + ' aluno(s)' + '' +  } }
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y} aluno(s)` } }
                 },
                 scales: {
                     y: {
@@ -166,7 +166,7 @@ async function drawChartAdmin() {
                 responsive: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: ctx =>  + '' +  $ + '{ctx.parsed.x}' + ' usuário(s)' + '' +  } }
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} usuário(s)` } }
                 },
                 scales: {
                     x: {
