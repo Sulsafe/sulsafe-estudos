@@ -8,6 +8,7 @@ import { toast, sanitizar, $, $$ } from '../utils.js'
 
 export function vConfig() {
     const c = S.cfg
+    const podeEditarNome = Boolean(S.user && S.user.role !== 'aluno')
     const temas = [
         { id: 'verde', cor: '#2E7D32', nm: 'Verde' },
         { id: 'azul', cor: '#1565C0', nm: 'Azul' },
@@ -27,16 +28,27 @@ export function vConfig() {
     h += `</div></div>`
     h += `<div class="cfg-sc" id="cfgVideo"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações de Vídeo</h3><div class="cfg-grp"><label>Qualidade Padrão</label><select id="cfgQual" onchange="window.saveCfg()"><option value="sd"${c.qual === 'sd' ? ' selected' : ''}>SD (480p)</option><option value="hd"${c.qual === 'hd' ? ' selected' : ''}>HD (720p)</option><option value="fhd"${c.qual === 'fhd' ? ' selected' : ''}>Full HD (1080p)</option><option value="auto"${c.qual === 'auto' ? ' selected' : ''}>Automático</option></select></div><div class="cfg-grp"><label>Velocidade</label><select id="cfgSpeed" onchange="window.saveCfg()"><option value="0.75"${c.speed === '0.75' ? ' selected' : ''}>0.75x</option><option value="1"${c.speed === '1' ? ' selected' : ''}>1x</option><option value="1.25"${c.speed === '1.25' ? ' selected' : ''}>1.25x</option><option value="1.5"${c.speed === '1.5' ? ' selected' : ''}>1.5x</option><option value="2"${c.speed === '2' ? ' selected' : ''}>2x</option></select></div></div>`
     h += `<div class="cfg-sc" id="cfgAudio"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações de Áudio</h3><div class="cfg-grp"><label>Volume Geral: <strong id="volVal">${c.vol}%</strong></label><input type="range" id="cfgVol" min="0" max="100" value="${c.vol}" oninput="$('#volVal').textContent=this.value+'%';window.saveCfg()"></div></div>`
-    h += `<div class="cfg-sc" id="cfgGeral"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações Gerais</h3><div class="cfg-grp"><label>Notificações de Novo Conteúdo</label><select onchange="S.cfg.notifs=this.value==='true';window.saveCfg()"><option value="true"${c.notifs !== false ? ' selected' : ''}>Ativadas</option><option value="false"${c.notifs === false ? ' selected' : ''}>Desativadas</option></select></div><div class="cfg-grp"><label>Nome de Exibição</label><input type="text" value="${S.user?.nome_completo || ''}" onchange="atualizarNome(this.value)"></div></div>`
+    h += `<div class="cfg-sc" id="cfgGeral"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações Gerais</h3><div class="cfg-grp"><label>Notificações de Novo Conteúdo</label><select onchange="S.cfg.notifs=this.value==='true';window.saveCfg()"><option value="true"${c.notifs !== false ? ' selected' : ''}>Ativadas</option><option value="false"${c.notifs === false ? ' selected' : ''}>Desativadas</option></select></div>${podeEditarNome ? `<div class="cfg-grp"><label>Nome de Exibição</label><input type="text" value="${S.user?.nome_completo || ''}" onchange="atualizarNome(this.value)"></div>` : ''}${S.user?.role === 'aluno' ? '<div class="cfg-grp"><label>Dossiê SISTEC</label><button class="btn btn-p" style="width:auto" onclick="window.nav(\'dossie\')"><i class="fas fa-id-card"></i> Abrir meu dossiê</button></div>' : ''}</div>`
     h += `</div></div>`
     return h
 }
 
 async function atualizarNome(nome) {
     if (!S.user) return
-    await sbUpdateUser(S.user.id, { nome_completo: sanitizar(nome) })
-    S.user.nome_completo = nome
-    localStorage.setItem('ss_user', JSON.stringify(S.user))
+
+    const nomeLimpo = sanitizar(nome).trim()
+    if (!nomeLimpo) {
+        toast('O nome não pode ficar vazio.', 'err')
+        return
+    }
+
+    const { error } = await sbUpdateUser(S.user.id, { nome_completo: nomeLimpo })
+    if (error) {
+        toast('Não foi possível atualizar o nome.', 'err')
+        return
+    }
+
+    S.user.nome_completo = nomeLimpo
     window.renderSB()
     toast('Nome atualizado!', 'success')
 }

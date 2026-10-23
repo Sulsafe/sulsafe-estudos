@@ -79,7 +79,8 @@ export function role() {
 }
 
 export function isAdmin() {
-    return role() === 'admin'
+    const r = role()
+    return r === 'admin' || r === 'super_admin'
 }
 
 export function isProf() {
@@ -88,7 +89,7 @@ export function isProf() {
 
 export function canManage() {
     const r = role()
-    return r === 'admin' || r === 'professor'
+    return r === 'admin' || r === 'super_admin' || r === 'professor'
 }
 
 // Formatador de cards de estatística
@@ -130,14 +131,24 @@ export function renderView() {
     const content = document.getElementById('appContent')
     if (!content) return
 
+    const irAoTopo = () => {
+        try {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        } catch {
+            window.scrollTo(0, 0)
+        }
+    }
+
     try {
         const res = viewFn()
         if (typeof res === 'string') {
             content.innerHTML = res
+            irAoTopo()
         } else if (res && typeof res.then === 'function') {
             res.then(html => {
                 if (typeof html === 'string') {
                     content.innerHTML = html
+                    irAoTopo()
                 }
             }).catch(err => {
                 console.error('Erro na view assíncrona:', err)

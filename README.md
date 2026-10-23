@@ -46,9 +46,8 @@ O GitHub Pages rebuilda automaticamente a cada push. Acesse:
 O email `sulsafetreinamentos@gmail.com` já está hardcoded como admin master no código. Quando você logar com esse email, entra direto no "Modo Deus" (vê tudo).
 
 Para mudar o admin master (se quiser):
-1. Abra `login.html`
-2. Procure por `SUPER_ADMIN_EMAILS`
-3. Edite o array com os emails que devem ser admin
+1. Abra `js/utils.js` e altere a constante `ADMIN_EMAIL`
+2. A migration do Almoxarifado também valida esse e-mail master (ou `role` igual a `admin`/`super_admin`)
 
 ### 4. Configurar Mercado Pago (quando tiver a chave)
 

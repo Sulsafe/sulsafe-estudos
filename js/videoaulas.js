@@ -3,7 +3,7 @@
 // ============================================================
 
 import { S, NRS, role, isAdmin, isProf, uid, nav } from './state.js'
-import { sb, sbGetProgressoUsuario } from './supabase-client.js'
+import { sb, sbGetVideoaulas, sbGetProgressoUsuario } from './supabase-client.js'
 import { toast, sanitizar, $, $$ } from './utils.js'
 
 // Estado interno da view de videoaulas
@@ -62,10 +62,8 @@ async function carregarVideoaulasData() {
     if (!grid) return
 
     try {
-        // 1. Busca vídeos cadastrados no Supabase
-        const { data: videos, error: errVideos } = await sb
-            .from('videoaulas')
-            .select('*')
+        // 1. Busca apenas os vídeos globais (conteúdo direcionado fica nas trilhas)
+        const { data: videos, error: errVideos } = await sbGetVideoaulas(null, true)
 
         if (errVideos) {
             console.warn('Aviso ao buscar videoaulas:', errVideos)
@@ -115,7 +113,7 @@ function renderGridVideoaulas() {
 
     NRS.forEach(nr => {
         const video = videoaulasData.find(v => v.nr === nr.n || v.nr_id === nr.n)
-        const link = video?.link_youtube || ''
+        const link = video?.url_video || video?.link_youtube || ''
         const concluida = Boolean(progressoMap[String(nr.n)])
 
         h += `
@@ -288,14 +286,29 @@ async function salvarLinkNr(nrNum, btn) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'
 
     try {
-        const { error } = await sb.from('videoaulas').upsert({
-            nr: nrNum,
-            nr_id: nrNum,
-            link_youtube: link,
-            atualizado_em: new Date().toISOString()
-        })
+        const { data: existente, error: erroBusca } = await sb
+            .from('videoaulas')
+            .select('id')
+            .eq('nr_id', nrNum)
+            .limit(1)
+            .maybeSingle()
 
-        if (error) throw error
+        if (erroBusca) throw erroBusca
+
+        if (existente?.id) {
+            const { error } = await sb.from('videoaulas')
+                .update({ url_video: link, atualizado_em: new Date().toISOString() })
+                .eq('id', existente.id)
+            if (error) throw error
+        } else {
+            const { error } = await sb.from('videoaulas').insert({
+                titulo: `NR ${nrNum}`,
+                nr_id: nrNum,
+                url_video: link,
+                ordem: 0
+            })
+            if (error) throw error
+        }
 
         toast(`Link da NR ${nrNum} atualizado com sucesso!`, 'success')
         await carregarVideoaulasData()

@@ -23,7 +23,7 @@ export async function handleLogin(email, password) {
                 password
             })
 
-        if (authError) {
+        if (authError || !authData?.user?.id) {
             throw new Error('Email ou senha incorretos')
         }
 
@@ -52,13 +52,6 @@ export async function handleLogin(email, password) {
         }
 
         S.user = profile
-
-        localStorage.setItem(
-            'ss_session',
-            JSON.stringify({ id: profile.id })
-        )
-
-        localStorage.setItem('ss_user', JSON.stringify(profile))
 
         loadCfg()
         enterDash()

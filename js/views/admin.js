@@ -1,16 +1,17 @@
-﻿﻿// ============================================================
+// ============================================================
 // VIEW: ADMIN (MODO DEUS)
 // ============================================================
 import { S, nav, fmtD } from '../state.js'
-import { sbGetDashboardMetrics, sbGetAllUsers, sbGetRankingAlunos, sbUpdateUser, sbLiberarUsuario, sbBloquearUsuario } from '../supabase-client.js'
-import { role, isAdmin, uid, toast, handleError, openMdl, closeMdl, $, $$ } from '../utils.js'
+import { sb, sbGetDashboardMetrics, sbGetAllUsers, sbGetRankingAlunos, sbUpdateUser, sbLiberarUsuario, sbBloquearUsuario } from '../supabase-client.js'
+import { role, isAdmin, uid, toast, handleError, openMdl, closeMdl, sanitizar, $, $$ } from '../utils.js'
+import { drawAdminProgress, drawAdminRoles } from '../charts-admin.js'
 
 export function vAdmin() {
     if (!isAdmin()) return window.nav('inicio')
     let h = `<div class="btn-back" onclick="window.nav('inicio')"><i class="fas fa-arrow-left"></i> Voltar</div>`
     h += `<div class="god-hd"><h2><i class="fas fa-shield-halved"></i> Modo Deus</h2><p>Controle total — ${S.user.email}</p></div>`
     h += `<div id="adminStats"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando dados...</p></div></div>`
-    h += `<div class="ch-g"><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Alunos por Progresso</h3><canvas id="chartAdmProg" height="200"></canvas></div><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Distribuição de Roles</h3><canvas id="chartAdmRoles" height="200"></canvas></div></div>`
+    h += `<div class="ch-g"><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Alunos por Progresso</h3><div class="chart-canvas"><canvas id="chartAdmProg" role="img" aria-label="Alunos por faixa de progresso"></canvas></div></div><div class="ch-b"><h3><i class="fas fa-chart-bar"></i> Distribuição de Roles</h3><div class="chart-canvas"><canvas id="chartAdmRoles" role="img" aria-label="Distribuição de usuários por perfil"></canvas></div></div></div>`
     h += `<div id="adminUsers"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando usuários...</p></div></div>`
     h += `<div class="pnl" style="border:2px solid #D32F2F"><div class="pnl-h"><div class="pnl-t" style="color:#D32F2F"><i class="fas fa-skull-crossbones"></i> Zona de Perigo</div></div><p style="font-size:13px;color:var(--tx2);margin-bottom:14px">Apaga <strong>TODOS</strong> os dados da plataforma.</p><button class="btn btn-d" style="width: auto;" onclick="modalApagarTudo()"><i class="fas fa-bomb"></i> APAGAR TUDO</button></div>`
     
@@ -20,7 +21,7 @@ export function vAdmin() {
 
 async function carregarAdminData() {
     const { data: metrics } = await sbGetDashboardMetrics()
-    const { data: users } = await sbGetAllUsers()
+    const { data: users } = await sbGetAllUsers(0, 1000)
     const { data: ranking } = await sbGetRankingAlunos()
     const statsDiv = document.getElementById('adminStats')
     if (statsDiv && metrics) {
@@ -40,13 +41,15 @@ async function carregarAdminData() {
     if (usersDiv && users) {
         let h = `<div class="pnl"><div class="pnl-h"><div class="pnl-t"><i class="fas fa-users-gear"></i> Gerenciar Usuários (${users.length})</div></div><input class="search" placeholder="Buscar usuário..." oninput="filterU(this.value)"><div class="tw" style="margin-top:14px"><table><thead><tr><th>Nome</th><th>Email</th><th>Role</th><th>Status</th><th>Ações</th></tr></thead><tbody id="uTB">`
         users.forEach(u => {
-            const rc = u.role === 'admin' ? 'bg-warn' : u.role === 'professor' ? 'bg-ok' : 'bg-info'
+            const rc = (u.role === 'admin' || u.role === 'super_admin') ? 'bg-warn' : u.role === 'professor' ? 'bg-ok' : 'bg-info'
             const st = u.status === 'ativo' ? 'bg-ok' : u.status === 'pendente' ? 'bg-pendente' : 'bg-err'
-            h += `<tr data-un="${u.nome_completo.toLowerCase()} ${u.email.toLowerCase()}">
-                <td><strong>${u.nome_completo}</strong></td>
-                <td>${u.email}</td>
-                <td><span class="badge ${rc}">${u.role}</span></td>
-                <td><span class="badge ${st}">${u.status || 'pendente'}</span></td>
+            const nome = sanitizar(u.nome_completo || '')
+            const email = sanitizar(u.email || '')
+            h += `<tr data-un="${nome.toLowerCase()} ${email.toLowerCase()}">
+                <td><strong>${nome}</strong></td>
+                <td>${email}</td>
+                <td><span class="badge ${rc}">${sanitizar(u.role)}</span></td>
+                <td><span class="badge ${st}">${sanitizar(u.status || 'pendente')}</span></td>
                 <td>
                     ${u.email !== 'sulsafetreinamentos@gmail.com' ? `
                         <select onchange="changeRole('${u.id}',this.value)" style="background:var(--ip);border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--tx)">
@@ -63,7 +66,8 @@ async function carregarAdminData() {
         usersDiv.innerHTML = h
     }
     
-    setTimeout(drawChartAdmin, 100)
+    drawAdminProgress('chartAdmProg', ranking || [])
+    drawAdminRoles('chartAdmRoles', users || [])
 }
 
 function filterU(q) { q = q.toLowerCase(); $$('#uTB tr').forEach(r => { r.style.display = r.dataset.un.includes(q) ? '' : 'none' }) }
@@ -92,97 +96,6 @@ async function execApagar() {
     carregarAdminData()
 }
 
-async function drawChartAdmin() {
-    const cv1 = document.getElementById('chartAdmProg'), cv2 = document.getElementById('chartAdmRoles')
-    const { data: ranking } = await sbGetRankingAlunos()
-    const { data: users } = await sbGetAllUsers()
-    
-    if (cv1 && ranking) {
-        let p0 = 0, p1 = 0, p2 = 0, p3 = 0
-        ranking.forEach(a => {
-            const pct = a.progresso || 0
-            if (pct === 0) p0++
-            else if (pct <= 50) p1++
-            else if (pct <= 80) p2++
-            else p3++
-        })
-        if (window.charts && window.charts.admProg) try { window.charts.admProg.destroy() } catch (e) {}
-        window.charts = window.charts || {}
-        window.charts.admProg = new Chart(cv1, {
-            type: 'bar',
-            data: {
-                labels: ['Não iniciado', '1–50%', '51–80%', '81–100%'],
-                datasets: [{
-                    label: 'Alunos',
-                    data: [p0, p1, p2, p3],
-                    backgroundColor: ['rgba(180,50,50,0.65)', 'rgba(220,150,30,0.65)', 'rgba(46,125,50,0.50)', 'rgba(46,125,50,0.85)'],
-                    borderColor: ['rgba(180,50,50,1)', 'rgba(200,130,10,1)', 'rgba(46,100,50,1)', 'rgba(30,100,40,1)'],
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderSkipped: false
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.y} aluno(s)` } }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: 'rgba(100,100,100,0.7)' },
-                        grid: { color: 'rgba(200,210,205,0.3)' }
-                    },
-                    x: {
-                        ticks: { color: 'rgba(60,80,70,0.85)' },
-                        grid: { display: false }
-                    }
-                }
-            }
-        })
-    }
-    if (cv2 && users) {
-        const rc = { admin: 0, professor: 0, aluno: 0 }
-        users.forEach(u => { rc[u.role] = (rc[u.role] || 0) + 1 })
-        if (window.charts && window.charts.admRoles) try { window.charts.admRoles.destroy() } catch (e) {}
-        window.charts = window.charts || {}
-        window.charts.admRoles = new Chart(cv2, {
-            type: 'bar',
-            data: {
-                labels: ['Admins', 'Professores', 'Alunos'],
-                datasets: [{
-                    label: 'Usuários por Role',
-                    data: [rc.admin, rc.professor, rc.aluno],
-                    backgroundColor: ['rgba(201,176,55,0.75)', 'rgba(46,125,50,0.75)', 'rgba(100,130,110,0.65)'],
-                    borderColor: ['rgba(201,176,55,1)', 'rgba(46,125,50,1)', 'rgba(80,110,90,1)'],
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderSkipped: false
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.parsed.x} usuário(s)` } }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: 'rgba(100,100,100,0.7)' },
-                        grid: { color: 'rgba(200,210,205,0.3)' }
-                    },
-                    y: {
-                        ticks: { color: 'rgba(60,80,70,0.85)', font: { weight: '600' } },
-                        grid: { display: false }
-                    }
-                }
-            }
-        })
-    }
-}
 
 function stC(v, l, ic) {
     return `<div class="st-mod">

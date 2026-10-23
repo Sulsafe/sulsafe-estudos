@@ -4,8 +4,16 @@
   "private": true,
   "description": "SulSafe — Plataforma de Segurança do Trabalho (landing + app + webhook MP)",
   "type": "module",
+  "scripts": {
+    "test": "node --test tests/almoxarifado-rules.test.mjs tests/almoxarifado-migration.test.mjs tests/direcionamento-conteudo.test.mjs tests/dossie-sistec.test.mjs tests/seguranca-acesso.test.mjs tests/escopo-professor-migration.test.mjs",
+    "test:concurrency": "node tests/concurrency-last-admin.test.mjs",
+    "test:escopo": "node tests/escopo-professor-runtime.test.mjs",
+    "check": "node auditar-imports.mjs",
+    "popular-nrs": "node popular-nrs.mjs"
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "pdf-lib": "^1.17.1"
   },
   "engines": {
     "node": ">=18"

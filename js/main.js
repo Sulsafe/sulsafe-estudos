@@ -19,7 +19,13 @@ import { vAdmin } from './views/admin.js'
 import { vConfig } from './views/config.js'
 import { vPendentes } from './views/pendentes.js'
 import { vProfessor } from './views/professor.js'
+import { vTrilhas } from './views/trilhas.js'
 import { vForum } from './views/forum.js'
+import { vCentral } from './views/central.js'
+import { vAlmoxarifado } from './views/almoxarifado.js'
+import { vDossie } from './views/dossie.js'
+import { vAuditoriaDossies } from './views/auditoria-dossies.js'
+import { initAccessibility } from './accessibility.js'
 
 // Views de catálogo, player e materiais
 import { vVideoaulas } from './videoaulas.js'
@@ -28,6 +34,7 @@ import { vMateriais } from './materiais.js'
 // Registrar todas as views no State
 registerView('inicio', vInicio)
 registerView('videoaulas', vVideoaulas)
+registerView('trilhas', vTrilhas)
 registerView('materiais', vMateriais)
 registerView('salas', vSalas)
 registerView('nrs', vNRs)
@@ -40,6 +47,12 @@ registerView('admin', vAdmin)
 registerView('config', vConfig)
 registerView('pendentes', vPendentes)
 registerView('professor', vProfessor)
+registerView('central', vCentral)
+registerView('almoxarifado', vAlmoxarifado)
+registerView('dossie', vDossie)
+registerView('auditoria-dossies', vAuditoriaDossies)
+
+initAccessibility()
 
 setRenderSidebar(renderSB)
 
@@ -76,40 +89,68 @@ document.getElementById('frmCad')?.addEventListener('submit', async (e) => {
 // ============================================================
 // INICIALIZAÇÃO E AUTO-LOGIN
 // ============================================================
+function exibirLogin() {
+    const authWrap = document.getElementById('authWrap')
+    if (authWrap) authWrap.classList.remove('off')
+}
+
+async function encerrarSessaoInvalida() {
+    try {
+        await sb.auth.signOut()
+    } catch (error) {
+        console.warn('Falha ao encerrar sessão inválida:', error)
+    }
+
+    S.user = null
+}
+
 ;(async function inicializarApp() {
     loadCfg()
 
+    // Remove resquícios do antigo fallback inseguro de sessão.
     try {
-        const { data: { session } } = await sb.auth.getSession()
+        localStorage.removeItem('ss_session')
+        localStorage.removeItem('ss_user')
+    } catch (error) {
+        console.warn('Falha ao limpar sessão antiga:', error)
+    }
+
+    try {
+        const { data: { session }, error: sessionError } = await sb.auth.getSession()
+
+        if (sessionError) throw sessionError
+
         if (session?.user?.id) {
-            const { data: user } = await sbGetUser(session.user.id)
-            if (user) {
-                S.user = user
-                localStorage.setItem('ss_user', JSON.stringify(user))
-                enterDash()
+            const { data: { user: authUser }, error: authError } = await sb.auth.getUser()
+
+            if (authError || !authUser?.id) {
+                await encerrarSessaoInvalida()
+                exibirLogin()
                 return
             }
-        }
 
-        // Fallback para sessão gravada em storage
-        const sessionData = localStorage.getItem('ss_session')
-        if (sessionData) {
-            const { id } = JSON.parse(sessionData)
-            const { data: user } = await sbGetUser(id)
-            if (user) {
-                S.user = user
-                localStorage.setItem('ss_user', JSON.stringify(user))
-                enterDash()
+            const { data: user, error: profileError } = await sbGetUser(authUser.id)
+
+            if (profileError || !user) {
+                await encerrarSessaoInvalida()
+                exibirLogin()
                 return
             }
+
+            if (user.status !== 'ativo') {
+                await encerrarSessaoInvalida()
+                exibirLogin()
+                return
+            }
+
+            S.user = user
+            enterDash()
+            return
         }
 
-        // Se não houver sessão ativa, exibe o container de login
-        const authWrap = document.getElementById('authWrap')
-        if (authWrap) authWrap.classList.remove('off')
+        exibirLogin()
     } catch (e) {
         console.warn('Auto-login:', e)
-        const authWrap = document.getElementById('authWrap')
-        if (authWrap) authWrap.classList.remove('off')
+        exibirLogin()
     }
 })()

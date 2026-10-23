@@ -17,7 +17,15 @@ import {
 
 export function vMateriais() {
     let h = `<div class="btn-back" onclick="nav('inicio')"><i class="fas fa-arrow-left"></i> Voltar</div>`
-    h += `<h2 class="wc">Materiais de Apoio</h2><p class="wcs">Arquivos, apostilas e recursos complementares por NR.</p>`
+    h += `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+        <div>
+            <h2 class="wc" style="margin:0">Materiais de Apoio</h2>
+            <p class="wcs" style="margin:6px 0 0">Arquivos, apostilas e recursos complementares por NR.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-p" onclick="carregarMateriais()">
+            <i class="fas fa-rotate"></i> Atualizar
+        </button>
+    </div>`
 
     if (isAdmin() || isProf()) {
         h += `<div class="pnl" style="margin-bottom:24px;border:2px dashed var(--p);">
@@ -396,12 +404,38 @@ export async function carregarMateriais() {
 
     if (!container) return
 
+    container.innerHTML = `<div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando materiais...</p></div>`
+
     const { data: materiais, error } = await sbGetMateriais()
 
     if (error) {
         console.error('Erro ao carregar materiais:', error)
-        container.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i><p>Erro ao carregar materiais</p></div>`
+        container.innerHTML = `<div class="empty">
+            <i class="fas fa-triangle-exclamation"></i>
+            <h4>Erro ao carregar materiais</h4>
+            <p style="font-size:12px">${sanitizar(error.message || 'Falha na consulta ao Supabase.')}</p>
+            <button type="button" class="btn btn-sm btn-p" onclick="carregarMateriais()" style="margin-top:12px">
+                <i class="fas fa-rotate"></i> Tentar novamente
+            </button>
+        </div>`
         return
+    }
+
+    if (!materiais || materiais.length === 0) {
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) {
+            console.warn('Materiais indisponíveis: nenhuma sessão Supabase ativa.')
+            container.innerHTML = `<div class="empty">
+                <i class="fas fa-lock"></i>
+                <h4>Sessão expirada</h4>
+                <p>Entre novamente para visualizar os materiais.</p>
+                <a class="btn btn-sm btn-p" href="login.html" style="margin-top:12px">
+                    <i class="fas fa-right-to-bracket"></i> Entrar novamente
+                </a>
+            </div>`
+            return
+        }
+        console.warn('Nenhum material retornado para a sessão autenticada.', session.user?.id)
     }
 
     const materiaisPorNR = {}
@@ -420,7 +454,8 @@ export async function carregarMateriais() {
         })
     }
 
-    let html = ''
+    const totalMateriais = materiais?.length || 0
+    let html = `<p style="font-size:12px;color:var(--tx3);margin-bottom:10px;">${totalMateriais} material${totalMateriais === 1 ? '' : 'is'} encontrado${totalMateriais === 1 ? '' : 's'}.</p>`
 
     NRS.forEach(nr => {
         const items = materiaisPorNR[nr.n] || []
@@ -447,10 +482,14 @@ export async function carregarMateriais() {
                 const dadosEdicaoSeguro = sanitizar(dadosEdicao)
                 const urlSeguro = sanitizar(material.url || '')
                 const tituloSeguro = sanitizar(material.titulo || '')
+                const tipoMaterial = String(material.tipo || '').toLowerCase()
+                const iconeMaterial = tipoMaterial === 'pdf'
+                    ? 'fa-file-pdf'
+                    : (tipoMaterial === 'arquivo' ? 'fa-file' : 'fa-link')
 
                 return `
                     <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;background:var(--ip);border-radius:8px;border:1px solid var(--bd);margin-top:4px;flex-wrap:wrap;">
-                        <i class="fas ${material.tipo === 'arquivo' ? 'fa-file' : 'fa-link'}" style="color:var(--p);"></i>
+                        <i class="fas ${iconeMaterial}" style="color:var(--p);"></i>
                         <span style="flex:1;font-size:13px;font-weight:500;">${tituloSeguro}</span>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <button class="btn btn-sm btn-p" data-url="${urlSeguro}" onclick="estudarMaterial(this.dataset.url)">

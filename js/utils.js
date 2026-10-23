@@ -41,7 +41,7 @@ export function handleError(error) {
 }
 
 // Modal
-export function openMdl(html) {
+export function openMdl(html, opcoes = {}) {
     let modal = document.getElementById('mdlGlobal')
 
     if (!modal) {
@@ -56,7 +56,10 @@ export function openMdl(html) {
         document.body.appendChild(modal)
     }
 
-    modal.innerHTML = `<div style="background:#fff;border-radius:20px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 24px 48px rgba(0,0,0,.25)">${html}</div>`
+    const maxWidth = opcoes.maxWidth || '520px'
+    const largura = opcoes.width || '90%'
+
+    modal.innerHTML = `<div style="background:#fff;border-radius:20px;padding:28px;max-width:${maxWidth};width:${largura};max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 24px 48px rgba(0,0,0,.25)">${html}</div>`
     modal.style.display = 'flex'
 
     return modal
@@ -93,7 +96,8 @@ export function role() {
 }
 
 export function isAdmin() {
-    return role() === 'admin'
+    const r = role()
+    return r === 'admin' || r === 'super_admin'
 }
 
 export function isProf() {
@@ -193,7 +197,7 @@ document.head.appendChild(style)
 // Permission helper
 export function canManage() {
     const r = role()
-    return r === 'admin' || r === 'professor'
+    return r === 'admin' || r === 'super_admin' || r === 'professor'
 }
 
 // Expose functions for global use

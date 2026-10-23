@@ -2,9 +2,9 @@
 // APP - FUNÇÕES PRINCIPAIS DO DASHBOARD & SHELL SPA
 // ============================================================
 
-import { S, nav, role, uid, fmtD } from './state.js'
+import { ADMIN_EMAIL, toast, sanitizar, $, $$ } from './utils.js'
 import { sbGetNotificacoes, sbMarcarNotificacaoLida, sbMarcarTodasNotificacoesLidas } from './supabase-client.js'
-import { toast, sanitizar, $, $$ } from './utils.js'
+import { S, role, uid, nav, fmtD } from './state.js'
 
 let listaNotificacoes = []
 let unreadCount = 0
@@ -33,6 +33,7 @@ export function renderSB() {
     const sidebar = document.getElementById('appSidebar')
     if (!sidebar) return
     const r = role()
+    const admin = r === 'admin' || r === 'super_admin'
     const userNome = S.user?.nome_completo || 'Aluno SulSafe'
 
     // Define a view ativa de forma segura
@@ -62,8 +63,8 @@ export function renderSB() {
         </div>
 
         <div class="sb-role ${r}">
-            <i class="fas ${r === 'admin' ? 'fa-crown' : r === 'professor' ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
-            <span>${r === 'admin' ? 'Administrador' : r === 'professor' ? 'Professor' : 'Estudante'}</span>
+            <i class="fas ${admin ? 'fa-crown' : r === 'professor' ? 'fa-chalkboard-user' : 'fa-user-graduate'}"></i>
+            <span>${admin ? 'Administrador' : r === 'professor' ? 'Professor' : 'Estudante'}</span>
         </div>
 
         <nav class="sb-nav">
@@ -72,6 +73,9 @@ export function renderSB() {
 
     const items = [
         { id: 'inicio', icon: 'fa-house', label: 'Início' },
+        ...(r === 'aluno'
+            ? [{ id: 'trilhas', icon: 'fa-route', label: 'Meus Cursos/Trilhas' }]
+            : []),
         { id: 'videoaulas', icon: 'fa-circle-play', label: 'Videoaulas NRs' },
         { id: 'materiais', icon: 'fa-file-lines', label: 'Materiais & Apostilas' },
         { id: 'salas', icon: 'fa-tower-broadcast', label: 'Salas ao Vivo' },
@@ -103,6 +107,7 @@ export function renderSB() {
 
     const academicItems = []
     if (r === 'aluno') {
+        academicItems.push({ id: 'dossie', icon: 'fa-id-card', label: 'Meu Dossiê' })
         academicItems.push({ id: 'boletim', icon: 'fa-chart-simple', label: 'Meu Boletim' })
         academicItems.push({ id: 'provas', icon: 'fa-file-pdf', label: 'Minhas Provas' })
         academicItems.push({ id: 'certificados', icon: 'fa-award', label: 'Certificados' })
@@ -112,13 +117,8 @@ export function renderSB() {
         academicItems.push({ id: 'certificados', icon: 'fa-award', label: 'Certificados' })
     }
 
-    if (r === 'professor' || r === 'admin') {
+    if (r === 'professor' || admin) {
         academicItems.push({ id: 'professor', icon: 'fa-chalkboard-user', label: 'Área do Professor' })
-    }
-
-    if (r === 'admin') {
-        academicItems.push({ id: 'pendentes', icon: 'fa-user-clock', label: 'Aprovações' })
-        academicItems.push({ id: 'admin', icon: 'fa-shield-halved', label: 'Modo Deus' })
     }
 
     academicItems.push({ id: 'config', icon: 'fa-gear', label: 'Configurações' })
@@ -132,6 +132,28 @@ export function renderSB() {
             </div>
         `
     })
+
+    if (admin) {
+        h += `<div class="sb-lbl" style="margin-top:14px">Administração</div>`
+        const adminItems = [
+            { id: 'central', icon: 'fa-gauge-high', label: 'Central Administrativa' },
+                ...(S.user?.email?.trim()?.toLowerCase() === ADMIN_EMAIL
+                ? [{ id: 'almoxarifado', icon: 'fa-boxes-stacked', label: 'Almoxarifado' }]
+                : []),
+            { id: 'pendentes', icon: 'fa-user-clock', label: 'Aprovações' },
+            { id: 'auditoria-dossies', icon: 'fa-folder-open', label: 'Auditoria de Dossiês' },
+            { id: 'admin', icon: 'fa-shield-halved', label: 'Modo Deus' }
+        ]
+        adminItems.forEach(item => {
+            const active = currentView === item.id ? 'on' : ''
+            h += `
+                <div class="ni ${active}" data-view="${item.id}" onclick="window.nav('${item.id}')">
+                    <i class="fas ${item.icon}"></i>
+                    <span>${item.label}</span>
+                </div>
+            `
+        })
+    }
 
     h += `
         </nav>
@@ -213,6 +235,7 @@ export function enterDash() {
     
     if (S.sidebar) S.sidebar()
     renderV(S.view || 'inicio')
+    try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }) } catch { window.scrollTo(0, 0) }
     checkNotifs()
 }
 

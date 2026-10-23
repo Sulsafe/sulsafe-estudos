@@ -2,11 +2,35 @@
 // VIEW: CERTIFICADOS
 // ============================================================
 
-import { S, isAdmin, isProf, nav } from '../state.js'
+import { S, NRS, isAdmin, isProf, nav } from '../state.js'
 import { toast, handleError, sanitizar } from '../utils.js'
-import { sb, sbGetCertificadosAluno } from '../supabase-client.js'
+import { sb, sbGetCertificadosAluno, sbGetUser, sbCriarUrlDocumento } from '../supabase-client.js'
+import { mascararCpf } from '../dossie-constants.js'
+import { gerarCertificadoPDF } from '../certificado-pdf.js'
 
 window.nav = nav
+
+function tituloCertificado(cert) {
+    const nrId = Number(cert?.nr_id)
+    const nr = NRS.find(item => Number(item.n) === nrId)
+
+    if (!nr) return 'Certificado SulSafe'
+
+    return `Certificado NR-${String(nr.n).padStart(2, '0')} - ${nr.nome}`
+}
+
+function formatarData(valor) {
+    if (!valor) return 'Data não informada'
+
+    const data = new Date(valor)
+    return Number.isNaN(data.getTime())
+        ? 'Data não informada'
+        : data.toLocaleDateString('pt-BR')
+}
+
+function codigoCertificado(cert) {
+    return cert?.codigo || String(cert?.id ?? '').slice(0, 8)
+}
 
 export function vCerts() {
     let h = `<div class="btn-back" onclick="nav('inicio')"><i class="fas fa-arrow-left"></i> Voltar</div>`
@@ -47,7 +71,7 @@ export async function carregarCertificados() {
             const result = await sb
                 .from('certificados')
                 .select('*')
-                .order('emitido_em', { ascending: false })
+                .order('criado_em', { ascending: false })
 
             certs = result.data
             error = result.error
@@ -75,11 +99,9 @@ export async function carregarCertificados() {
         `
 
         certs.forEach(cert => {
-            const titulo = sanitizar(cert.titulo || 'Certificado')
+            const titulo = sanitizar(tituloCertificado(cert))
             const id = sanitizar(String(cert.id))
-            const emitidoEm = cert.emitido_em
-                ? new Date(cert.emitido_em).toLocaleDateString('pt-BR')
-                : 'Data não informada'
+            const emitidoEm = formatarData(cert.criado_em)
             const revogado = cert.revogado === true
 
             html += `
@@ -176,6 +198,30 @@ async function buscarCertificado(id) {
 }
 
 // ============================================================
+// DADOS DO ALUNO / FOTO
+// ============================================================
+
+async function carregarAlunoCertificado(cert) {
+    const { data: aluno } = await sbGetUser(cert.usuario_id)
+
+    if (aluno) return aluno
+    if (String(cert.usuario_id) === String(S.user?.id)) return S.user
+
+    return null
+}
+
+async function resolverFotoAluno(aluno) {
+    const caminho = aluno?.foto_url
+
+    if (!caminho) return ''
+
+    if (/^https?:\/\//i.test(caminho)) return caminho
+
+    const { data } = await sbCriarUrlDocumento(caminho, 900)
+    return data?.signedUrl || ''
+}
+
+// ============================================================
 // VISUALIZAR CERTIFICADO
 // ============================================================
 
@@ -192,13 +238,14 @@ window.visualizarCert = async function (id) {
         }
 
         const cert = await buscarCertificado(id)
+        const aluno = await carregarAlunoCertificado(cert)
+        const fotoUrl = await resolverFotoAluno(aluno)
 
-        const titulo = sanitizar(cert.titulo || 'Certificado SulSafe')
-        const nome = sanitizar(S.user.nome_completo || 'Usuário')
-        const data = cert.emitido_em
-            ? new Date(cert.emitido_em).toLocaleDateString('pt-BR')
-            : 'Data não informada'
-        const codigo = sanitizar(String(cert.id).slice(0, 8))
+        const titulo = sanitizar(tituloCertificado(cert))
+        const nome = sanitizar(aluno?.nome_completo || 'Aluno SulSafe')
+        const cpf = aluno?.cpf ? sanitizar(mascararCpf(aluno.cpf)) : ''
+        const data = formatarData(cert.criado_em)
+        const codigo = sanitizar(codigoCertificado(cert))
         const nr = sanitizar(String(cert.nr_id ?? 'Não informada'))
 
         win.document.open()
@@ -233,6 +280,15 @@ window.visualizarCert = async function (id) {
                     }
                     h1 { color: #174c36; }
                     .data { color: #555; overflow-wrap: anywhere; }
+                    .foto {
+                        width: 96px;
+                        height: 120px;
+                        object-fit: cover;
+                        border: 3px solid #c6a54b;
+                        border-radius: 8px;
+                        margin: 0 auto 14px;
+                        display: block;
+                    }
                     button {
                         padding: 10px 18px;
                         border: 0;
@@ -250,8 +306,10 @@ window.visualizarCert = async function (id) {
             <body>
                 <main class="cert">
                     <h1>Certificado SulSafe</h1>
+                    ${fotoUrl ? `<img class="foto" src="${sanitizar(fotoUrl)}" alt="Foto do aluno">` : ''}
                     <h2>${titulo}</h2>
                     <p>Outorgado a <strong>${nome}</strong></p>
+                    ${cpf ? `<p>CPF: ${cpf}</p>` : ''}
                     <p>NR ${nr} · Emitido em ${data}</p>
                     <p class="data">Código: ${codigo}</p>
                     <p>Certificado ativo</p>
@@ -272,38 +330,101 @@ window.visualizarCert = async function (id) {
 // BAIXAR CERTIFICADO EM PDF
 // ============================================================
 
-window.baixarCert = async function (id) {
-    try {
-        const cert = await buscarCertificado(id)
+function baixarCertificadoSimples(cert, aluno) {
+    if (!window.jspdf?.jsPDF) {
+        toast('O recurso de PDF não está disponível nesta página.', 'err')
+        return false
+    }
 
-        if (!window.jspdf?.jsPDF) {
-            toast('O recurso de PDF não está disponível nesta página.', 'err')
-            return
+    const { jsPDF } = window.jspdf
+    const doc = new jsPDF()
+
+    const titulo = tituloCertificado(cert)
+    const nome = aluno?.nome_completo ||
+        (String(cert.usuario_id) === String(S.user?.id) ? S.user?.nome_completo : '') ||
+        'Aluno SulSafe'
+    const cpf = aluno?.cpf ? mascararCpf(aluno.cpf) : ''
+    const data = formatarData(cert.criado_em)
+    const codigo = codigoCertificado(cert)
+
+    doc.setFontSize(22)
+    doc.text('Certificado SulSafe', 20, 30)
+
+    doc.setFontSize(16)
+    doc.text(doc.splitTextToSize(`Título: ${titulo}`, 170), 20, 50)
+    doc.text(doc.splitTextToSize(`Nome: ${nome}`, 170), 20, 70)
+
+    let y = 90
+    if (cpf) {
+        doc.text(`CPF: ${cpf}`, 20, y)
+        y += 20
+    }
+
+    doc.text(`NR: ${cert.nr_id ?? 'Não informada'}`, 20, y)
+    doc.text(`Emitido em: ${data}`, 20, y + 20)
+    doc.text(`Código: ${codigo}`, 20, y + 40)
+
+    doc.save(`certificado_${codigo}.pdf`)
+    return true
+}
+
+window.baixarCert = async function (id) {
+    let cert = null
+    let aluno = null
+
+    try {
+        cert = await buscarCertificado(id)
+        aluno = await carregarAlunoCertificado(cert)
+
+        const fotoUrl = await resolverFotoAluno(aluno)
+        const nr = NRS.find(item => Number(item.n) === Number(cert.nr_id))
+        let instrutor = null
+
+        if (cert.emitido_por) {
+            const { data } = await sbGetUser(cert.emitido_por)
+            instrutor = data
         }
 
-        const { jsPDF } = window.jspdf
-        const doc = new jsPDF()
+        await gerarCertificadoPDF(
+            {
+                nome_completo: aluno?.nome_completo || 'Aluno SulSafe',
+                cpf: aluno?.cpf || '',
+                email: aluno?.email || '',
+                foto_url: fotoUrl
+            },
+            {
+                nr_id: cert.nr_id,
+                nome: nr?.nome || `NR-${cert.nr_id}`,
+                carga_horaria: Number(cert.carga_horaria) || 40
+            },
+            {
+                instrutor: instrutor
+                    ? { nome_completo: instrutor.nome_completo || '' }
+                    : undefined,
+                codigo: cert.codigo,
+                nota: cert.nota,
+                dataConclusao: cert.criado_em || new Date(),
+                fotoUrl,
+                baixar: true
+            }
+        )
 
-        const titulo = cert.titulo || 'Certificado SulSafe'
-        const nome = S.user.nome_completo || 'Usuário'
-        const data = cert.emitido_em
-            ? new Date(cert.emitido_em).toLocaleDateString('pt-BR')
-            : 'Data não informada'
-        const codigo = String(cert.id).slice(0, 8)
-
-        doc.setFontSize(22)
-        doc.text('Certificado SulSafe', 20, 30)
-
-        doc.setFontSize(16)
-        doc.text(doc.splitTextToSize(`Título: ${titulo}`, 170), 20, 50)
-        doc.text(doc.splitTextToSize(`Nome: ${nome}`, 170), 20, 70)
-        doc.text(`NR: ${cert.nr_id ?? 'Não informada'}`, 20, 90)
-        doc.text(`Emitido em: ${data}`, 20, 110)
-        doc.text(`Código: ${codigo}`, 20, 130)
-
-        doc.save(`certificado_${codigo}.pdf`)
+        toast('Certificado gerado com sucesso!', 'success')
     } catch (error) {
-        console.error('Erro ao baixar certificado:', error)
+        console.warn('Gerador completo indisponível; usando fallback em jsPDF:', error)
+
+        if (cert) {
+            try {
+                if (baixarCertificadoSimples(cert, aluno)) {
+                    toast('Certificado gerado em modo simplificado.', 'warn')
+                    return
+                }
+            } catch (fallbackError) {
+                handleError(fallbackError)
+                return
+            }
+        }
+
         handleError(error)
     }
 }

@@ -2,7 +2,7 @@
 // VIEW: PROVAS (Aluno / Professor)
 // ============================================================
 import { S, role, uid, nav, fmtD, NRS } from '../state.js'
-import { sbEnviarProva, sbGetProvasPendentes, sbCorrigirProva, sbGetProvasAluno, sbUploadArquivo, STORAGE_BUCKET } from '../supabase-client.js'
+import { sbEnviarProva, sbGetProvasPendentes, sbCorrigirProva, sbGetProvasAluno, sbGetProvasDirecionadasAluno, sbUploadArquivo, STORAGE_BUCKET } from '../supabase-client.js'
 import { openMdl, closeMdl, $, $$, toast, sanitizar, handleError } from '../utils.js'
 
 export function vProvas() {
@@ -12,6 +12,7 @@ export function vProvas() {
     
     if (r === 'aluno') {
         h += `<p class="wcs">Envie sua avaliação ou trabalho prático em PDF para correção dos instrutores.</p>`
+        h += `<div id="provasDirecionadasAluno"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas e testes direcionados...</p></div></div>`
         h += `<div class="pnl"><div class="pnl-h"><div class="pnl-t"><i class="fas fa-upload"></i> Enviar Nova Prova</div></div>
             <form id="frmEnviarProva" onsubmit="enviarProva(event)">
                 <div class="fld"><label>Norma Regulamentadora (NR)</label>
@@ -29,6 +30,7 @@ export function vProvas() {
             </form>
         </div>`
         h += `<div id="minhasProvas"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando histórico de provas...</p></div></div>`
+        setTimeout(carregarProvasDirecionadasAluno, 150)
         setTimeout(carregarMinhasProvas, 150)
     } else {
         h += `<p class="wcs">Avalie e lance notas para as atividades enviadas pelos alunos.</p>`
@@ -36,6 +38,54 @@ export function vProvas() {
         setTimeout(carregarProvasPendentes, 150)
     }
     return h
+}
+
+async function carregarProvasDirecionadasAluno() {
+    const container = document.getElementById('provasDirecionadasAluno')
+    if (!container) return
+
+    const { data: provas, error } = await sbGetProvasDirecionadasAluno()
+
+    if (error) {
+        console.error('Erro ao carregar provas direcionadas:', error)
+        container.innerHTML = `
+            <div class="pnl" style="border-left:4px solid #EF6C00">
+                <div class="pnl-t"><i class="fas fa-triangle-exclamation" style="color:#EF6C00"></i> Provas e testes direcionados</div>
+                <p style="font-size:12px;color:var(--tx3);margin-top:8px">Não foi possível carregar as provas direcionadas.</p>
+            </div>
+        `
+        return
+    }
+
+    if (!provas || provas.length === 0) {
+        container.innerHTML = ''
+        return
+    }
+
+    container.innerHTML = `<div class="pnl">
+        <div class="pnl-h"><div class="pnl-t"><i class="fas fa-bullseye"></i> Provas e Testes Direcionados para Você</div></div>
+        <div class="tw"><table>
+            <thead><tr><th>Título</th><th>NR</th><th>Tipo</th><th>Origem</th><th>Prazo</th><th>Arquivo</th></tr></thead>
+            <tbody>
+                ${provas.map(prova => {
+                    const origem = prova.turma_id
+                        ? `Turma: ${sanitizar(prova.turmas?.nome || '')}`
+                        : 'Individual'
+                    const prazo = prova.prazo
+                        ? new Date(prova.prazo).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+                        : '—'
+                    return `<tr>
+                        <td><strong>${sanitizar(prova.titulo)}</strong>${prova.descricao ? `<br><span style="font-size:11px;color:var(--tx3)">${sanitizar(prova.descricao)}</span>` : ''}</td>
+                        <td>${prova.nr_id ? `NR ${sanitizar(String(prova.nr_id))}` : '—'}</td>
+                        <td><span class="badge bg-info">${prova.tipo === 'teste' ? 'Teste' : 'Prova'}</span></td>
+                        <td>${origem}</td>
+                        <td>${sanitizar(prazo)}</td>
+                        <td>${prova.arquivo_url ? `<a href="${sanitizar(prova.arquivo_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-s"><i class="fas fa-file-pdf"></i> Abrir</a>` : '—'}</td>
+                    </tr>`
+                }).join('')}
+            </tbody>
+        </table></div>
+    </div>`
 }
 
 async function enviarProva(e) {

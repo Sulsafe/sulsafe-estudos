@@ -22,6 +22,8 @@ export function vInicio() {
     h += cCard('fa-robot', 'Assistente IA', 'Dúvidas sobre NRs 24/7', 'ia')
     h += cCard('fa-comments', 'Fórum de Dúvidas', 'Comunidade & Instrutores', 'forum')
     if (r === 'aluno') {
+        h += cCard('fa-route', 'Meus Cursos/Trilhas', 'Conteúdos direcionados para você', 'trilhas')
+        h += cCard('fa-id-card', 'Meu Dossiê', 'Dados e documentos para o SISTEC', 'dossie')
         h += cCard('fa-file-lines', 'Meu Boletim', 'Acompanhe suas notas', 'boletim')
         h += cCard('fa-file-pdf', 'Minhas Provas', 'Envie sua prova', 'provas')
         h += cCard('fa-certificate', 'Certificados', 'Certificados emitidos', 'certificados')
@@ -33,9 +35,12 @@ export function vInicio() {
     }
     if (isAdmin()) {
         h += cCard('fa-user-clock', 'Pendentes', 'Aprovar alunos', 'pendentes')
+        h += cCard('fa-folder-open', 'Auditoria de Dossiês', 'Conferir dados e documentos', 'auditoria-dossies')
         h += cCard('fa-file-pen', 'Notas', 'Gerenciar notas', 'boletim')
         h += cCard('fa-file-pdf', 'Corrigir Provas', 'Provas para corrigir', 'provas')
         h += cCard('fa-certificate', 'Certificados', 'Emitir certificados', 'certificados')
+        h += cCard('fa-gauge-high', 'Central Administrativa', 'Visão consolidada', 'central')
+        h += cCard('fa-boxes-stacked', 'Almoxarifado', 'Estoque & movimentações', 'almoxarifado')
         h += cCard('fa-shield-halved', 'Modo Deus', 'Controle total', 'admin')
     }
     h += `</div>`
