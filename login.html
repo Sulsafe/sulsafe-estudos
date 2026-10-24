@@ -1,319 +1,681 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SulSafe | Portal do Aluno & Treinamentos</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
 
     <!-- CSS do Dashboard e Sistema Completo -->
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="acessibilidade.css">
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="acessibilidade.css" />
 
     <!-- Chart.js para Métricas e Boletim -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --verde: #2E7D32;
-            --verde-escuro: #1B5E20;
-            --verde-claro: #43A047;
-            --verde-bg: #E8F5E9;
-            --dourado: #C9B037;
-            --texto: #1A1A1A;
-            --texto-sec: #555;
-            --borda: #E0E0E0;
-            --branco: #FFFFFF;
-            --radius: 16px;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #E8F5E9 0%, #fff 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-        body.dash-active {
-            display: block !important;
-            padding: 0 !important;
-            min-height: 100vh;
-            min-height: 100dvh;
-            background: var(--bg, #f4f7f6) !important;
-        }
-        body.dash-active #authWrap {
-            display: none !important;
-        }
-        .login-container {
-            background: #fff;
-            border-radius: 24px;
-            padding: 48px 40px;
-            max-width: 440px;
-            width: 100%;
-            box-shadow: 0 24px 48px rgba(0,0,0,.12);
-            border: 1px solid var(--borda);
-        }
-        .login-logo {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        .login-logo img {
-            width: 72px;
-            height: 72px;
-            border-radius: 16px;
-            background: var(--verde);
-            padding: 8px;
-            margin-bottom: 12px;
-            object-fit: contain;
-        }
-        .login-logo h1 {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--verde-escuro);
-            letter-spacing: -1px;
-        }
-        .login-logo p {
-            color: var(--texto-sec);
-            font-size: 14px;
-            margin-top: 4px;
-        }
-        .tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--verde-bg);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 28px;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all .25s;
-            background: transparent;
-            color: var(--texto-sec);
-            border: none;
-            cursor: pointer;
-        }
-        .tab-btn.active {
-            background: #fff;
-            color: var(--verde-escuro);
-            box-shadow: 0 2px 8px rgba(0,0,0,.08);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 16px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--texto-sec);
-            margin-bottom: 6px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1.5px solid var(--borda);
-            border-radius: 10px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border-color .2s;
-            background: #FAFAFA;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--verde);
-            background: #fff;
-        }
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 15px;
-            background: var(--verde);
-            color: #fff;
-            border: none;
-            transition: all .25s;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .btn:hover {
-            background: var(--verde-escuro);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46,125,50,.35);
-        }
-        .btn-gold {
-            background: var(--dourado);
-            color: var(--verde-escuro);
-        }
-        .btn-gold:hover { background: #A8922C; box-shadow: 0 6px 20px rgba(201,176,55,.4); }
-        .form-footer {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 13px;
-            color: var(--texto-sec);
-        }
-        .form-footer a {
-            color: var(--verde);
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .form-footer a:hover { text-decoration: underline; }
-        .terms-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: var(--texto-sec);
-        }
-        .terms-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--verde);
-        }
-        .recaptcha-note {
-            font-size: 11px;
-            color: var(--texto-sec);
-            text-align: center;
-            margin-top: 12px;
-            opacity: .7;
-        }
-        .off { display: none !important; }
-        #authWrap { display: block; width: 100%; max-width: 440px; }
-        #appWrap { display: block; width: 100%; }
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--texto-sec);
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 16px;
-            text-decoration: none;
-        }
-        .back-link:hover { color: var(--verde-escuro); }
-    </style>
-</head>
-<body>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --verde: #2e7d32;
+        --verde-escuro: #1b5e20;
+        --verde-claro: #43a047;
+        --verde-bg: #e8f5e9;
+        --dourado: #c9b037;
+        --texto: #1a1a1a;
+        --texto-sec: #555;
+        --borda: #e0e0e0;
+        --branco: #ffffff;
+        --radius: 16px;
+      }
 
-<!-- TELA DE AUTENTICAÇÃO -->
-<div id="authWrap">
-    <div class="login-container">
-        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Voltar à Página Principal</a>
-        
-        <div class="login-logo">
-            <img src="logo1.png" alt="SulSafe" onerror="this.style.display='none'">
+      html,
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--verde-bg);
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+
+      /* ===== ÁREA DO MASCOTE (VISUAL) ===== */
+      .login-visual {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        height: 100%;
+      }
+
+      .login-video-stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 400px;
+        overflow: hidden;
+        border-radius: 28px;
+        background: #dce8d8 url("videologin/sulsafe_video_poster.jpg") left
+          center / cover no-repeat; /* Poster alinhado à esquerda */
+        box-shadow:
+          0 30px 60px -30px rgba(22, 54, 32, 0.38),
+          0 4px 16px rgba(22, 54, 32, 0.07);
+      }
+
+      .login-video {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* ALINHAMENTO À ESQUERDA PARA NÃO CORTAR O MASCOTE */
+        object-position: left center;
+        pointer-events: none;
+      }
+
+      .login-video.is-unavailable {
+        display: none;
+      }
+
+      @media (min-width: 901px) {
+        .login-video-stage {
+          -webkit-mask-image: linear-gradient(
+            90deg,
+            #000 calc(100% - 40px),
+            transparent 100%
+          );
+          mask-image: linear-gradient(
+            90deg,
+            #000 calc(100% - 40px),
+            transparent 100%
+          );
+        }
+      }
+
+      body.dash-active {
+        display: block !important;
+        padding: 0 !important;
+        min-height: 100vh;
+        min-height: 100dvh;
+        background: var(--bg, #f4f7f6) !important;
+      }
+
+      body.dash-active #authWrap {
+        display: none !important;
+      }
+
+      .login-container {
+        position: relative;
+        z-index: 2;
+        flex-shrink: 0;
+        background: #fff;
+        border-radius: 26px;
+        padding: clamp(28px, 2.4vw, 44px);
+        max-width: 460px;
+        width: 100%;
+        margin: 0;
+        max-height: none;
+        overflow: visible;
+        box-shadow:
+          0 30px 60px -32px rgba(22, 54, 32, 0.32),
+          0 2px 8px rgba(22, 54, 32, 0.05);
+        border: 1px solid rgba(27, 94, 32, 0.1);
+      }
+
+      .login-logo {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .login-logo img {
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+        background: var(--verde);
+        padding: 8px;
+        margin-bottom: 12px;
+        object-fit: contain;
+      }
+
+      .login-logo h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--verde-escuro);
+        letter-spacing: -1px;
+      }
+
+      .login-logo p {
+        color: var(--texto-sec);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--verde-bg);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 28px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.25s;
+        background: transparent;
+        color: var(--texto-sec);
+        border: none;
+        cursor: pointer;
+      }
+
+      .tab-btn.active {
+        background: #fff;
+        color: var(--verde-escuro);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--texto-sec);
+        margin-bottom: 6px;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1.5px solid var(--borda);
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: border-color 0.2s;
+        background: #fafafa;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--verde);
+        background: #fff;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 15px;
+        background: var(--verde);
+        color: #fff;
+        border: none;
+        transition: all 0.25s;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn:hover {
+        background: var(--verde-escuro);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.35);
+      }
+
+      .btn-gold {
+        background: var(--dourado);
+        color: var(--verde-escuro);
+      }
+
+      .btn-gold:hover {
+        background: #a8922c;
+        box-shadow: 0 6px 20px rgba(201, 176, 55, 0.4);
+      }
+
+      .form-footer {
+        text-align: center;
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--texto-sec);
+      }
+
+      .form-footer a {
+        color: var(--verde);
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .form-footer a:hover {
+        text-decoration: underline;
+      }
+
+      .terms-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--texto-sec);
+      }
+
+      .terms-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--verde);
+      }
+
+      .recaptcha-note {
+        font-size: 11px;
+        color: var(--texto-sec);
+        text-align: center;
+        margin-top: 12px;
+        opacity: 0.7;
+      }
+
+      .off {
+        display: none !important;
+      }
+
+      /* ===== WRAPPER PRINCIPAL ===== */
+      #authWrap {
+        position: relative;
+        z-index: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(400px, 460px);
+        justify-content: center;
+        align-items: stretch;
+        gap: clamp(24px, 3vw, 64px);
+        width: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: clamp(20px, 2.6vw, 52px);
+        overflow-x: hidden;
+        background-color: transparent;
+      }
+
+      .login-panel {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+        padding: 0;
+      }
+
+      #appWrap {
+        display: block;
+        width: 100%;
+      }
+
+      @media (max-width: 900px) {
+        #authWrap {
+          display: block;
+          padding: 0 0 28px;
+          background-color: transparent;
+        }
+
+        .login-visual {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
+        .login-video-stage {
+          width: 100%;
+          max-width: none;
+          height: auto;
+          aspect-ratio: 4 / 3;
+          max-height: 48dvh;
+          border-radius: 0 0 26px 26px;
+          box-shadow: 0 18px 40px -28px rgba(22, 54, 32, 0.45);
+          -webkit-mask-image: linear-gradient(
+            180deg,
+            #000 0%,
+            #000 88%,
+            transparent 100%
+          );
+          mask-image: linear-gradient(
+            180deg,
+            #000 0%,
+            #000 88%,
+            transparent 100%
+          );
+          /* No mobile, o poster também fica alinhado à esquerda */
+          background-position: left center;
+        }
+
+        .login-video {
+          /* No mobile, alinha à esquerda para mostrar o mascote */
+          object-position: left center;
+        }
+
+        .login-panel {
+          width: 100%;
+          min-height: auto;
+          padding: 18px 16px 0;
+        }
+
+        .login-container {
+          margin: 0 auto;
+          max-width: 460px;
+          border-radius: 22px;
+          padding: 26px 22px;
+        }
+
+        .login-logo {
+          margin-bottom: 24px;
+        }
+
+        .login-logo img {
+          width: 64px;
+          height: 64px;
+        }
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--texto-sec);
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        color: var(--verde-escuro);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TELA DE AUTENTICAÇÃO -->
+    <div id="authWrap">
+      <div class="login-visual">
+        <div class="login-video-stage">
+          <video
+            class="login-video"
+            autoplay
+            muted
+            playsinline
+            preload="auto"
+            poster="videologin/sulsafe_video_poster.jpg"
+            aria-hidden="true"
+            tabindex="-1"
+          >
+            <source src="videologin/sulsafe-login.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </div>
+
+      <div class="login-panel">
+        <div class="login-container">
+          <a href="index.html" class="back-link"
+            ><i class="fas fa-arrow-left"></i> Voltar à Página Principal</a
+          >
+
+          <div class="login-logo">
+            <img
+              src="logo1.png"
+              alt="SulSafe"
+              onerror="this.style.display = 'none'"
+            />
             <h1>SulSafe</h1>
             <p>Plataforma de Estudos & Formação Técnica</p>
-        </div>
+          </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="tLogin" onclick="window.showT('tLogin')">Entrar</button>
-            <button class="tab-btn" data-tab="tCad" onclick="window.showT('tCad')">Cadastrar</button>
-        </div>
+          <div class="tabs">
+            <button
+              type="button"
+              class="tab-btn active"
+              data-tab="tLogin"
+              onclick="window.showT('tLogin')"
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              data-tab="tCad"
+              onclick="window.showT('tCad')"
+            >
+              Cadastrar
+            </button>
+          </div>
 
-        <!-- LOGIN -->
-        <div class="tab-content active" id="tLogin">
-            <form id="frmLogin">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="lEmail" placeholder="seu@email.com" required autocomplete="email">
-                </div>
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="lPass" placeholder="••••••••" required autocomplete="current-password">
-                </div>
-                <button type="submit" class="btn"><i class="fas fa-right-to-bracket"></i> Acessar Painel</button>
+          <!-- LOGIN -->
+          <div class="tab-content active" id="tLogin">
+            <form id="frmLogin" onsubmit="event.preventDefault()">
+              <div class="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  id="lEmail"
+                  placeholder="seu@email.com"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+              <div class="form-group">
+                <label>Senha</label>
+                <input
+                  type="password"
+                  id="lPass"
+                  placeholder="••••••••"
+                  required
+                  autocomplete="current-password"
+                />
+              </div>
+              <button type="submit" class="btn">
+                <i class="fas fa-right-to-bracket"></i> Acessar Painel
+              </button>
             </form>
             <div class="form-footer">
-                <a href="#" onclick="window.recuperarSenha()">Esqueceu sua senha?</a>
+              <a
+                href="#"
+                onclick="
+                  event.preventDefault();
+                  window.recuperarSenha();
+                "
+                >Esqueceu sua senha?</a
+              >
             </div>
-        </div>
+          </div>
 
-        <!-- CADASTRO -->
-        <div class="tab-content" id="tCad">
-            <form id="frmCad">
-                <div class="form-group">
-                    <label>Nome completo</label>
-                    <input type="text" id="cNome" placeholder="Seu nome completo" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="cEmail" placeholder="seu@email.com" required autocomplete="email">
-                </div>
-                <div class="form-group">
-                    <label>Senha (mín. 6 caracteres)</label>
-                    <input type="password" id="cPass" placeholder="••••••••" required minlength="6" autocomplete="new-password">
-                </div>
-                <div class="form-group">
-                    <label>Confirmar senha</label>
-                    <input type="password" id="cPass2" placeholder="••••••••" required autocomplete="new-password">
-                </div>
-                <div class="form-group">
-                    <label class="terms-row">
-                        <input type="checkbox" id="cTermos" required>
-                        Aceito os Termos de Uso e Política de Privacidade
-                    </label>
-                </div>
-                <button type="submit" class="btn btn-gold"><i class="fas fa-user-plus"></i> Criar Conta de Aluno</button>
+          <!-- CADASTRO -->
+          <div class="tab-content" id="tCad">
+            <form id="frmCad" onsubmit="event.preventDefault()">
+              <div class="form-group">
+                <label>Nome completo</label>
+                <input
+                  type="text"
+                  id="cNome"
+                  placeholder="Seu nome completo"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input
+                  type="email"
+                  id="cEmail"
+                  placeholder="seu@email.com"
+                  required
+                  autocomplete="email"
+                />
+              </div>
+              <div class="form-group">
+                <label>Senha (mín. 6 caracteres)</label>
+                <input
+                  type="password"
+                  id="cPass"
+                  placeholder="••••••••"
+                  required
+                  minlength="6"
+                  autocomplete="new-password"
+                />
+              </div>
+              <div class="form-group">
+                <label>Confirmar senha</label>
+                <input
+                  type="password"
+                  id="cPass2"
+                  placeholder="••••••••"
+                  required
+                  autocomplete="new-password"
+                />
+              </div>
+              <div class="form-group">
+                <label class="terms-row">
+                  <input type="checkbox" id="cTermos" required />
+                  Aceito os Termos de Uso e Política de Privacidade
+                </label>
+              </div>
+              <button type="submit" class="btn btn-gold">
+                <i class="fas fa-user-plus"></i> Criar Conta de Aluno
+              </button>
             </form>
-            <div class="recaptcha-note">Ambiente seguro SulSafe Treinamentos</div>
+            <div class="recaptcha-note">
+              Ambiente seguro SulSafe Treinamentos
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- DASHBOARD DO ESTUDANTE / ADMIN (SPA) -->
-<div id="appWrap" class="off">
-    <div id="dash" class="on">
+    <!-- DASHBOARD DO ESTUDANTE / ADMIN (SPA) -->
+    <div id="appWrap" class="off">
+      <div id="dash" class="on">
         <aside id="appSidebar" class="sidebar"></aside>
         <main id="appContent" class="main"></main>
-    </div>
+      </div>
 
-    <!-- Modais Globais -->
-    <div id="mdlBg" class="mdl-bg">
+      <!-- Modais Globais -->
+      <div id="mdlBg" class="mdl-bg">
         <div id="mdlBox" class="mdl"></div>
-    </div>
+      </div>
 
-    <!-- Modal de Videoaula Integrado -->
-    <div id="videoModal" class="mdl-bg">
+      <!-- Modal de Videoaula Integrado -->
+      <div id="videoModal" class="mdl-bg">
         <div class="mdl">
-            <div class="video-header">
-                <span id="videoModalTitle"><i class="fas fa-play-circle"></i> Videoaula</span>
-                <button class="mdl-x" onclick="window.fecharModalVideo()" title="Fechar"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="video-wrapper">
-                <iframe id="videoIframe" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-            </div>
-            <div class="video-footer">
-                <span class="progress-text" id="videoModalInfo">SulSafe Educação</span>
-                <button class="btn-concluir show" id="btnConcluirAula" onclick="window.concluirAulaAtual()"><i class="fas fa-check"></i> Marcar como Concluída</button>
-            </div>
+          <div class="video-header">
+            <span id="videoModalTitle"
+              ><i class="fas fa-play-circle"></i> Videoaula</span
+            >
+            <button
+              class="mdl-x"
+              onclick="window.fecharModalVideo()"
+              title="Fechar"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="video-wrapper">
+            <iframe
+              id="videoIframe"
+              src=""
+              allowfullscreen
+              allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+              "
+            ></iframe>
+          </div>
+          <div class="video-footer">
+            <span class="progress-text" id="videoModalInfo"
+              >SulSafe Educação</span
+            >
+            <button
+              class="btn-concluir show"
+              id="btnConcluirAula"
+              onclick="window.concluirAulaAtual()"
+            >
+              <i class="fas fa-check"></i> Marcar como Concluída
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Container Global de Toasts -->
+      <div id="toast"></div>
     </div>
 
-    <!-- Container Global de Toasts -->
-    <div id="toast"></div>
-</div>
+    <!-- Scripts Modularizados -->
+    <script>
+      // Garantir que a função de trocar abas exista imediatamente
+      window.showT = function (tabId) {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((content) => content.classList.remove("active"));
 
-<!-- Scripts Modularizados -->
-<script type="module" src="./js/main.js"></script>
+        const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        const content = document.getElementById(tabId);
 
-</body>
+        if (btn) btn.classList.add("active");
+        if (content) content.classList.add("active");
+      };
+
+      (() => {
+        const video = document.querySelector(".login-video");
+        if (!video) return;
+
+        const fallback = () => video.classList.add("is-unavailable");
+        video.addEventListener("error", fallback);
+        video.querySelector("source")?.addEventListener("error", fallback);
+
+        const play = () => {
+          if (!video.paused) return;
+          const tentativa = video.play();
+          if (tentativa && typeof tentativa.catch === "function") {
+            tentativa.catch(() => {});
+          }
+        };
+
+        play();
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) play();
+        });
+      })();
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
 </html>
