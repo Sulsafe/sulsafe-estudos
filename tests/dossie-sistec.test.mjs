@@ -110,14 +110,31 @@ test('cinco documentos obrigatórios e validação de CPF', () => {
     assert.equal(mascararCpf('52998224725'), '529.982.247-25')
 })
 
-test('gerador de certificado reserva área para foto 3x4', () => {
-    const foto = POSICOES_CERTIFICADO.frente.foto
+test('gerador de certificado usa o modelo aprovado e campos dinâmicos', () => {
+    const frente = POSICOES_CERTIFICADO.frente
+    const fonte = fs.readFileSync(
+        new URL('../js/certificado-pdf.js', import.meta.url),
+        'utf8'
+    )
 
-    assert.ok(foto)
-    assert.equal(Number.isFinite(foto.x), true)
-    assert.equal(Number.isFinite(foto.y), true)
-    assert.equal(foto.width > 0, true)
-    assert.equal(foto.height > 0, true)
+    assert.match(fonte, /certificado-base\.png/)
+
+    for (const campo of ['nome', 'curso', 'periodo', 'conteudo', 'assinaturas', 'meta']) {
+        assert.ok(frente[campo], `campo ${campo} ausente`)
+    }
+
+    assert.equal(frente.conteudo.itens.length, 8)
+
+    for (const pos of [frente.nome, frente.curso, frente.cargaHoraria, frente.meta]) {
+        assert.equal(Number.isFinite(pos.x), true)
+        assert.equal(Number.isFinite(pos.y), true)
+    }
+
+    for (const assinatura of Object.values(frente.assinaturas)) {
+        assert.equal(Number.isFinite(assinatura.x), true)
+        assert.equal(Number.isFinite(assinatura.y), true)
+        assert.equal(assinatura.maxWidth > 0, true)
+    }
 })
 
 test('auditoria permite admin editar a ficha e anexar documentos', () => {

@@ -376,7 +376,6 @@ window.baixarCert = async function (id) {
         cert = await buscarCertificado(id)
         aluno = await carregarAlunoCertificado(cert)
 
-        const fotoUrl = await resolverFotoAluno(aluno)
         const nr = NRS.find(item => Number(item.n) === Number(cert.nr_id))
         let instrutor = null
 
@@ -389,8 +388,7 @@ window.baixarCert = async function (id) {
             {
                 nome_completo: aluno?.nome_completo || 'Aluno SulSafe',
                 cpf: aluno?.cpf || '',
-                email: aluno?.email || '',
-                foto_url: fotoUrl
+                email: aluno?.email || ''
             },
             {
                 nr_id: cert.nr_id,
@@ -404,7 +402,6 @@ window.baixarCert = async function (id) {
                 codigo: cert.codigo,
                 nota: cert.nota,
                 dataConclusao: cert.criado_em || new Date(),
-                fotoUrl,
                 baixar: true
             }
         )

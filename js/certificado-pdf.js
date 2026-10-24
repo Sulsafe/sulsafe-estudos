@@ -5,29 +5,44 @@
 // No navegador ela é carregada via esm.sh; no Node pode ser
 // injetada em opcoes.pdfLib para testes.
 //
-// O arquivo certificado.png deve estar na raiz do site.
-// A imagem tem 1228x864 px e a página do PDF usa a mesma
-// proporção, então as coordenadas abaixo podem ser ajustadas
-// diretamente em pixels da imagem.
+// O arquivo certificado-base.png deve estar na raiz do site.
+// Ele é o modelo oficial certificadoatt.png com apenas as linhas
+// de exemplo do conteúdo programático removidas. A moldura, o
+// emblema, o título e as legendas permanecem na imagem; os dados
+// variáveis são desenhados como texto real e selecionável no PDF.
+// A página usa 1228x864 pontos, a mesma proporção da imagem, para
+// que as coordenadas possam ser ajustadas em pixels da imagem.
 //
 // Dados esperados (colunas do Supabase):
 // - public.certificados:
 //     id, usuario_id, nr_id, codigo, nota, carga_horaria,
 //     emitido_por, criado_em, revogado
 // - public.profiles (aluno):
-//     id, nome_completo, email, cpf, foto_url
+//     id, nome_completo, email, cpf
 // - public.profiles (instrutor, via certificados.emitido_por):
 //     id, nome_completo
 // - js/state.js (NRS):
 //     n -> nome do curso/NR
 //
+// A frente preenche apenas os campos variáveis do modelo: nome,
+// curso, período, carga horária, 8 linhas de conteúdo programático,
+// assinaturas, data e código de validação. O conteúdo programático
+// é opcional; quando não informado, as linhas pontilhadas do modelo
+// continuam visíveis, sem inventar tópicos.
+//
+// O período de realização não existe no schema atual. Quando o
+// chamador tiver datas reais (ex.: data_inicio/data_fim de uma
+// turma), basta passar opcoes.periodoInicio/periodoFim. Sem isso,
+// o campo fica em branco e a data de conclusão é usada apenas como
+// fim do período, nunca como data inicial inventada.
+//
 // profiles.cpf foi adicionada pela migration
 // 20261023000000_certificados_cpf_revogado.sql. A função
-// aceita aluno.cpf e usa "-" quando ele não é informado.
+// aceita aluno.cpf e usa "" quando ele não é informado.
 // ============================================================
 
 const PDF_LIB_URL = 'https://esm.sh/pdf-lib@1.17.1'
-const IMAGEM_CERTIFICADO_URL = new URL('../certificado.png', import.meta.url)
+const IMAGEM_CERTIFICADO_URL = new URL('../certificado-base.png', import.meta.url)
 
 const LARGURA_PAGINA = 1228
 const ALTURA_PAGINA = 864
@@ -36,36 +51,74 @@ const ALTURA_PAGINA = 864
 // COORDENADAS
 // ============================================================
 // x/y em pontos PDF, com origem no canto inferior esquerdo.
-// Para alinhar o texto ao layout visual, ajuste os valores
-// abaixo. O campo debugCoordenadas desenha cruzes vermelhas
-// em cada posição para facilitar o alinhamento.
+// Os valores foram medidos sobre certificado-base.png (1228x864):
+// y_pdf = 864 - y_imagem. Ajuste os valores abaixo para alinhar
+// o texto ao layout visual. O campo debugCoordenadas desenha
+// cruzes vermelhas em cada posição para facilitar o alinhamento.
 // ============================================================
 
 export const POSICOES_CERTIFICADO = {
     frente: {
-        certificamos: { x: 614, y: 512, size: 14, maxWidth: 900 },
-        nome: { x: 614, y: 470, size: 30, maxWidth: 940 },
-        cpf: { x: 614, y: 432, size: 12, maxWidth: 900 },
-        curso: { x: 614, y: 382, size: 18, maxWidth: 940 },
-        cargaHoraria: { x: 614, y: 346, size: 12, maxWidth: 900 },
-        dataConclusao: { x: 614, y: 320, size: 12, maxWidth: 900 },
-        foto: { x: 125, y: 400, width: 110, height: 140 },
-        instrutor: { x: 614, y: 150, size: 12, maxWidth: 500 },
-        codigo: { x: 1120, y: 58, size: 9, maxWidth: 420, align: 'right' }
+        // Linha do nome: imagem y=371 (x 240..986)
+        nome: { x: 613, y: 499, size: 26, minSize: 11, maxWidth: 720 },
+        // Linha do curso: imagem y=454 (x 186..1040)
+        curso: { x: 613, y: 414, size: 17, minSize: 9, maxWidth: 830 },
+        // Espaços "___/___/___" da frase do período, na imagem y=500
+        periodo: {
+            y: 364,
+            size: 15,
+            minSize: 9,
+            inicio: {
+                dia: { x: 430.5 },
+                mes: { x: 470.5 },
+                ano: { x: 514 }
+            },
+            fim: {
+                dia: { x: 573.5 },
+                mes: { x: 614 },
+                ano: { x: 657 }
+            }
+        },
+        // Espaço "___" antes de "horas."
+        cargaHoraria: { x: 974, y: 364, size: 15, minSize: 9, maxWidth: 36 },
+        // 8 linhas pontilhadas: coluna esquerda x 135..590 e direita x 633..1088
+        conteudo: {
+            size: 18,
+            minSize: 9,
+            itens: [
+                { numero: 1, numeroX: 135, textoX: 156, endX: 590, y: 294 },
+                { numero: 2, numeroX: 135, textoX: 156, endX: 590, y: 268 },
+                { numero: 3, numeroX: 135, textoX: 156, endX: 590, y: 242 },
+                { numero: 4, numeroX: 135, textoX: 156, endX: 590, y: 217 },
+                { numero: 5, numeroX: 633, textoX: 654, endX: 1088, y: 294 },
+                { numero: 6, numeroX: 633, textoX: 654, endX: 1088, y: 268 },
+                { numero: 7, numeroX: 633, textoX: 654, endX: 1088, y: 242 },
+                { numero: 8, numeroX: 633, textoX: 654, endX: 1088, y: 217 }
+            ]
+        },
+        // Linhas de assinatura na imagem y=724 (x 151..402, 487..738 e 823..1074)
+        assinaturas: {
+            aluno: { x: 276.5, y: 152, size: 14, minSize: 8, maxWidth: 300 },
+            instrutor: { x: 612.5, y: 152, size: 14, minSize: 8, maxWidth: 300 },
+            institucional: { x: 948.5, y: 152, size: 14, minSize: 8, maxWidth: 300 }
+        },
+        // "Reg. TST ___ / Data: __/__/__" sob o instrutor (imagem y=766)
+        registroTst: { x: 583.5, y: 98, size: 9, minSize: 7, maxWidth: 30 },
+        dataAssinatura: {
+            y: 98,
+            size: 9,
+            dia: { x: 668.5 },
+            mes: { x: 692.5 },
+            ano: { x: 719 }
+        },
+        // Faixa livre entre o conteúdo programático e as assinaturas
+        meta: { x: 613, y: 195, size: 9.5, minSize: 7, maxWidth: 960 }
     },
     verso: {
         margem: 90,
         topo: 760
     }
 }
-
-const CONTEUDO_PADRAO = [
-    'Introdução, objetivos e campo de aplicação da norma.',
-    'Identificação de riscos e medidas de prevenção.',
-    'Procedimentos operacionais e uso de equipamentos de proteção.',
-    'Responsabilidades, documentação e legislação aplicável.',
-    'Avaliação de aprendizagem e encerramento.'
-]
 
 // ============================================================
 // HELPERS DE DADOS
@@ -83,12 +136,31 @@ function formatarData(valor) {
         const [ano, mes, dia] = valor.split('-')
         return `${dia}/${mes}/${ano}`
     }
+    if (typeof valor === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(valor.trim())) {
+        return valor.trim()
+    }
     const data = valor instanceof Date ? valor : new Date(valor)
     if (Number.isNaN(data.getTime())) return String(valor)
     return data.toLocaleDateString('pt-BR')
 }
 
-function normalizarLista(valor, padrao) {
+function formatarDataOuVazio(valor) {
+    const texto = formatarData(valor)
+    return texto === '-' ? '' : texto
+}
+
+function dividirData(valor) {
+    const bruto = String(valor || '').trim()
+    const texto = /^\d{2}\/\d{2}\/\d{4}$/.test(bruto)
+        ? bruto
+        : formatarDataOuVazio(valor)
+    const partes = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(texto)
+    return partes
+        ? { dia: partes[1], mes: partes[2], ano: partes[3] }
+        : null
+}
+
+function normalizarLista(valor, padrao = []) {
     if (Array.isArray(valor)) {
         const itens = valor.map(item => String(item || '').trim()).filter(Boolean)
         if (itens.length) return itens
@@ -105,8 +177,9 @@ function normalizarLista(valor, padrao) {
 
 function normasPadrao(nrId, nomeCurso) {
     const nr = nrId ? `NR-${String(nrId).padStart(2, '0')}` : null
+    const nome = String(nomeCurso || '').trim()
     return [
-        nr ? `${nr} - ${nomeCurso}` : 'Normas Regulamentadoras de Segurança e Saúde no Trabalho',
+        nr && nome ? `${nr} - ${nome}` : (nr || nome || 'Normas Regulamentadoras de Segurança e Saúde no Trabalho'),
         'Portaria MTP nº 672/2021 e atualizações',
         'CLT, art. 157 a 163',
         'Legislação federal aplicável'
@@ -115,53 +188,85 @@ function normasPadrao(nrId, nomeCurso) {
 
 function normalizarDados(aluno = {}, curso = {}, opcoes = {}) {
     const nrId = curso?.nr_id ?? curso?.n ?? curso?.id ?? null
-    const nomeCurso = curso?.nome || curso?.titulo ||
-        (nrId ? `NR-${String(nrId).padStart(2, '0')}` : 'Curso SulSafe')
+    const rotuloNr = nrId ? `NR-${String(nrId).padStart(2, '0')}` : ''
+    const nomeCursoBruto = curso?.nome || curso?.titulo || ''
+    const nomeCurso = rotuloNr && nomeCursoBruto &&
+        !new RegExp(`^${rotuloNr}\\b`, 'i').test(nomeCursoBruto)
+        ? `${rotuloNr} - ${nomeCursoBruto}`
+        : (nomeCursoBruto || rotuloNr)
 
     const instrutor = opcoes?.instrutor || curso?.instrutor || null
     const nomeInstrutor = instrutor?.nome_completo || instrutor?.nome ||
-        opcoes?.instrutorNome || curso?.instrutor_nome || 'Instrutor SulSafe'
+        opcoes?.instrutorNome || curso?.instrutor_nome || ''
 
-    const cargaHoraria = Number(
-        curso?.carga_horaria ?? opcoes?.cargaHoraria ?? 40
+    const cargaHorariaBruta = curso?.carga_horaria ?? opcoes?.cargaHoraria
+    const cargaHoraria = Number(cargaHorariaBruta)
+    const cargaHorariaValida = Number.isFinite(cargaHoraria) && cargaHoraria > 0
+        ? cargaHoraria
+        : null
+
+    const dataConclusao = formatarDataOuVazio(
+        opcoes?.dataConclusao ||
+        opcoes?.emitidoEm ||
+        curso?.data_conclusao ||
+        curso?.criado_em
+    )
+
+    const periodoInicio = formatarDataOuVazio(
+        opcoes?.periodoInicio ||
+        curso?.periodoInicio ||
+        curso?.periodo_inicio ||
+        curso?.data_inicio
+    )
+
+    const periodoFim = formatarDataOuVazio(
+        opcoes?.periodoFim ||
+        curso?.periodoFim ||
+        curso?.periodo_fim ||
+        curso?.data_fim ||
+        dataConclusao
     )
 
     return {
         aluno: {
-            nome: aluno?.nome_completo || aluno?.nome || 'Aluno SulSafe',
-            cpf: formatarCpf(aluno?.cpf) || '-',
-            email: aluno?.email || '',
-            fotoUrl: aluno?.foto_url || aluno?.fotoUrl || opcoes?.fotoUrl || null,
-            fotoBytes: aluno?.fotoBytes || opcoes?.fotoBytes || null
+            nome: aluno?.nome_completo || aluno?.nome || '',
+            cpf: formatarCpf(aluno?.cpf) || '',
+            email: aluno?.email || ''
         },
         curso: {
             nrId,
             nome: nomeCurso,
-            cargaHoraria: Number.isFinite(cargaHoraria) ? cargaHoraria : 40,
+            cargaHoraria: cargaHorariaValida,
+            periodoInicio,
+            periodoFim,
             conteudoProgramatico: normalizarLista(
-                curso?.conteudoProgramatico || curso?.conteudo_programatico || opcoes?.conteudoProgramatico,
-                CONTEUDO_PADRAO
+                curso?.conteudoProgramatico ||
+                curso?.conteudo_programatico ||
+                opcoes?.conteudoProgramatico,
+                []
             ),
             normas: normalizarLista(
                 curso?.normas || opcoes?.normas,
-                normasPadrao(nrId, nomeCurso)
+                normasPadrao(nrId, nomeCursoBruto)
             )
         },
         certificado: {
             codigo: opcoes?.codigo || curso?.codigo || '',
             nota: opcoes?.nota ?? curso?.nota ?? null,
-            dataConclusao: formatarData(
-                opcoes?.dataConclusao ||
-                opcoes?.emitidoEm ||
-                curso?.data_conclusao ||
-                curso?.criado_em ||
-                new Date()
-            )
+            dataConclusao
         },
         instrutor: {
             nome: nomeInstrutor,
-            cargo: opcoes?.instrutorCargo || 'Instrutor de Segurança do Trabalho'
-        }
+            cargo: opcoes?.instrutorCargo || 'Instrutor de Segurança do Trabalho',
+            registroTst: opcoes?.instrutorRegistroTst ||
+                instrutor?.registro_tst ||
+                instrutor?.registroTst ||
+                ''
+        },
+        responsavelInstitucional:
+            opcoes?.responsavelInstitucional ||
+            curso?.responsavel_institucional ||
+            ''
     }
 }
 
@@ -240,8 +345,68 @@ function quebrarTexto(texto, font, size, maxWidth) {
     return linhas
 }
 
+// pdf-lib codifica as fontes padrão em WinAnsi. Normaliza
+// pontuação tipográfica e remove o que não puder ser codificado.
+function textoPdf(valor) {
+    return String(valor ?? '')
+        .replace(/\u00A0/g, ' ')
+        .replace(/[\u2013\u2014\u2212]/g, '-')
+        .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+        .replace(/[\u201C\u201D\u201E]/g, '"')
+        .replace(/\u2026/g, '...')
+        .replace(/\u2022/g, '-')
+        .replace(/[^\x20-\x7E\xA0-\xFF\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178]/g, '')
+}
+
+// Reduz a fonte até o texto caber na largura disponível.
+function ajustarFonte(texto, font, pos) {
+    const maxWidth = pos.maxWidth || 900
+    const minSize = pos.minSize ?? pos.size
+    let size = pos.size
+
+    while (size > minSize && font.widthOfTextAtSize(texto, size) > maxWidth) {
+        size = Math.max(minSize, size - 0.5)
+    }
+
+    return size
+}
+
+function encurtarTexto(texto, font, size, maxWidth) {
+    if (font.widthOfTextAtSize(texto, size) <= maxWidth) return texto
+
+    const reticencias = '...'
+    let corte = texto
+
+    while (corte.length > 1 && font.widthOfTextAtSize(`${corte}${reticencias}`, size) > maxWidth) {
+        corte = corte.slice(0, -1)
+    }
+
+    return `${corte.trimEnd()}${reticencias}`
+}
+
+// Menor fonte que faz todos os textos caberem, para manter
+// consistência visual entre campos do mesmo grupo.
+function tamanhoComum(textos, font, pos) {
+    const maxWidth = pos.maxWidth || 900
+    const minSize = pos.minSize ?? pos.size
+    let size = pos.size
+
+    for (const texto of textos) {
+        const conteudo = textoPdf(texto).trim()
+        if (!conteudo) continue
+        while (size > minSize && font.widthOfTextAtSize(conteudo, size) > maxWidth) {
+            size = Math.max(minSize, size - 0.5)
+        }
+    }
+
+    return size
+}
+
 function desenharCentralizado(page, texto, pos, font, color) {
-    const linhas = quebrarTexto(texto, font, pos.size, pos.maxWidth || 900)
+    const conteudo = textoPdf(texto).trim()
+    if (!conteudo || !pos) return pos?.y ?? 0
+
+    const linhas = quebrarTexto(conteudo, font, pos.size, pos.maxWidth || 900)
     const alturaLinha = pos.size * 1.25
     let y = pos.y
 
@@ -260,48 +425,84 @@ function desenharCentralizado(page, texto, pos, font, color) {
     return y
 }
 
-function desenharTextoDireita(page, texto, pos, font, color) {
-    const linhas = quebrarTexto(texto, font, pos.size, pos.maxWidth || 420)
-    let y = pos.y
+// Texto em uma única linha, centralizado ou à esquerda, com
+// redução automática de fonte e corte com reticências no limite.
+function desenharLinhaUnica(page, texto, pos, font, color, alinhamento = 'center') {
+    const conteudo = textoPdf(texto).trim()
+    if (!conteudo || !pos) return 0
 
-    for (const linha of linhas) {
-        const largura = font.widthOfTextAtSize(linha, pos.size)
-        page.drawText(linha, {
-            x: pos.x - largura,
-            y,
-            size: pos.size,
-            font,
-            color
-        })
-        y -= pos.size * 1.25
-    }
+    const size = ajustarFonte(conteudo, font, pos)
+    const maxWidth = pos.maxWidth || 900
+    const linha = encurtarTexto(conteudo, font, size, maxWidth)
+    const largura = font.widthOfTextAtSize(linha, size)
 
-    return y
+    page.drawText(linha, {
+        x: alinhamento === 'center' ? pos.x - largura / 2 : pos.x,
+        y: pos.y,
+        size,
+        font,
+        color
+    })
+
+    return largura
 }
 
-function desenharGuia(page, posicoes, font, color) {
-    for (const [campo, pos] of Object.entries(posicoes)) {
-        if (!Number.isFinite(pos?.x) || !Number.isFinite(pos?.y)) continue
+// Valor curto centralizado em um espaço do formulário (ex.: dia).
+function desenharCentradoEm(page, texto, x, y, size, font, color) {
+    const conteudo = textoPdf(texto).trim()
+    if (!conteudo) return
 
-        page.drawLine({
-            start: { x: pos.x - 10, y: pos.y },
-            end: { x: pos.x + 10, y: pos.y },
-            thickness: 0.6,
-            color
-        })
-        page.drawLine({
-            start: { x: pos.x, y: pos.y - 10 },
-            end: { x: pos.x, y: pos.y + 10 },
-            thickness: 0.6,
-            color
-        })
-        page.drawText(campo, {
-            x: pos.x + 12,
-            y: pos.y + 4,
-            size: 7,
-            font,
-            color
-        })
+    const largura = font.widthOfTextAtSize(conteudo, size)
+    page.drawText(conteudo, {
+        x: x - largura / 2,
+        y,
+        size,
+        font,
+        color
+    })
+}
+
+function desenharPontilhado(page, inicioX, fimX, y, color) {
+    if (!Number.isFinite(inicioX) || !Number.isFinite(fimX) || fimX - inicioX < 4) return
+
+    page.drawLine({
+        start: { x: inicioX, y },
+        end: { x: fimX, y },
+        thickness: 1.2,
+        color,
+        dashArray: [1.5, 2.2]
+    })
+}
+
+function desenharGuia(page, posicoes, font, color, prefixo = '', yHerdado = null) {
+    for (const [campo, pos] of Object.entries(posicoes || {})) {
+        if (!pos || typeof pos !== 'object') continue
+
+        const y = Number.isFinite(pos.y) ? pos.y : yHerdado
+
+        if (Number.isFinite(pos.x) && Number.isFinite(y)) {
+            page.drawLine({
+                start: { x: pos.x - 10, y },
+                end: { x: pos.x + 10, y },
+                thickness: 0.6,
+                color
+            })
+            page.drawLine({
+                start: { x: pos.x, y: y - 10 },
+                end: { x: pos.x, y: y + 10 },
+                thickness: 0.6,
+                color
+            })
+            page.drawText(`${prefixo}${campo}`, {
+                x: pos.x + 12,
+                y: y + 4,
+                size: 7,
+                font,
+                color
+            })
+        } else if (!Number.isFinite(pos.x)) {
+            desenharGuia(page, pos, font, color, `${prefixo}${campo}.`, y)
+        }
     }
 }
 
@@ -309,44 +510,69 @@ function desenharGuia(page, posicoes, font, color) {
 // FRENTE
 // ============================================================
 
-function desenharFoto(page, fotoImagem, pos, cores) {
-    if (!fotoImagem || !pos) return
+function formatarNota(valor) {
+    if (valor == null || valor === '') return ''
+    const numero = Number(valor)
+    if (!Number.isFinite(numero)) return String(valor)
+    return numero.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+}
 
-    const dimensoes = fotoImagem.scale(1)
-    const escala = Math.min(pos.width / dimensoes.width, pos.height / dimensoes.height)
-    const largura = dimensoes.width * escala
-    const altura = dimensoes.height * escala
+function desenharPeriodo(page, campos, partes, y, size, font, color) {
+    if (!partes) return
 
-    page.drawRectangle({
-        x: pos.x,
-        y: pos.y,
-        width: pos.width,
-        height: pos.height,
-        color: cores.branco,
-        borderColor: cores.dourado,
-        borderWidth: 1.5
+    for (const chave of ['dia', 'mes', 'ano']) {
+        const alvo = campos?.[chave]
+        if (!alvo || !partes[chave]) continue
+        desenharCentradoEm(page, partes[chave], alvo.x, y, size, font, color)
+    }
+}
+
+function desenharConteudo(page, pos, itens, font, color) {
+    const lista = Array.isArray(itens) ? itens : []
+    const textos = pos.itens.map((_, indice) => textoPdf(lista[indice] || '').trim())
+    const disponivel = Math.min(
+        ...pos.itens.map(slot => slot.endX - slot.textoX - 8)
+    )
+    const size = tamanhoComum(textos, font, {
+        size: pos.size,
+        minSize: pos.minSize,
+        maxWidth: disponivel
     })
 
-    page.drawImage(fotoImagem, {
-        x: pos.x + (pos.width - largura) / 2,
-        y: pos.y + (pos.height - altura) / 2,
-        width: largura,
-        height: altura
+    pos.itens.forEach((slot, indice) => {
+        page.drawText(`${slot.numero}.`, {
+            x: slot.numeroX,
+            y: slot.y,
+            size,
+            font,
+            color
+        })
+
+        const texto = textos[indice]
+        let fimTexto = slot.textoX - 4
+
+        if (texto) {
+            const linha = encurtarTexto(texto, font, size, disponivel)
+
+            page.drawText(linha, {
+                x: slot.textoX,
+                y: slot.y,
+                size,
+                font,
+                color
+            })
+
+            fimTexto = slot.textoX + font.widthOfTextAtSize(linha, size)
+        }
+
+        desenharPontilhado(page, fimTexto + 6, slot.endX, slot.y, color)
     })
 }
 
-function desenharFrente(page, fontes, cores, dados, opcoes, fotoImagem = null) {
+function desenharFrente(page, fontes, cores, dados, opcoes) {
     const pos = POSICOES_CERTIFICADO.frente
 
-    desenharCentralizado(
-        page,
-        'Certificamos que',
-        pos.certificamos,
-        fontes.regular,
-        cores.cinza
-    )
-
-    desenharCentralizado(
+    desenharLinhaUnica(
         page,
         dados.aluno.nome,
         pos.nome,
@@ -354,15 +580,7 @@ function desenharFrente(page, fontes, cores, dados, opcoes, fotoImagem = null) {
         cores.verde
     )
 
-    desenharCentralizado(
-        page,
-        `CPF: ${dados.aluno.cpf}`,
-        pos.cpf,
-        fontes.regular,
-        cores.texto
-    )
-
-    desenharCentralizado(
+    desenharLinhaUnica(
         page,
         dados.curso.nome,
         pos.curso,
@@ -370,57 +588,119 @@ function desenharFrente(page, fontes, cores, dados, opcoes, fotoImagem = null) {
         cores.verde
     )
 
-    desenharCentralizado(
+    desenharPeriodo(
         page,
-        `Carga horária: ${dados.curso.cargaHoraria} horas`,
-        pos.cargaHoraria,
+        pos.periodo.inicio,
+        dividirData(dados.curso.periodoInicio),
+        pos.periodo.y,
+        pos.periodo.size,
         fontes.regular,
         cores.texto
     )
 
-    desenharCentralizado(
+    desenharPeriodo(
         page,
-        `Data de conclusão: ${dados.certificado.dataConclusao}`,
-        pos.dataConclusao,
+        pos.periodo.fim,
+        dividirData(dados.curso.periodoFim),
+        pos.periodo.y,
+        pos.periodo.size,
         fontes.regular,
         cores.texto
     )
 
-    const larguraLinha = 360
-    page.drawLine({
-        start: { x: pos.instrutor.x - larguraLinha / 2, y: pos.instrutor.y + 28 },
-        end: { x: pos.instrutor.x + larguraLinha / 2, y: pos.instrutor.y + 28 },
-        thickness: 0.8,
-        color: cores.dourado
-    })
+    if (dados.curso.cargaHoraria != null) {
+        desenharCentradoEm(
+            page,
+            String(dados.curso.cargaHoraria),
+            pos.cargaHoraria.x,
+            pos.cargaHoraria.y,
+            pos.cargaHoraria.size,
+            fontes.regular,
+            cores.texto
+        )
+    }
 
-    desenharCentralizado(
+    desenharConteudo(
         page,
+        pos.conteudo,
+        dados.curso.conteudoProgramatico,
+        fontes.regular,
+        cores.texto
+    )
+
+    const nomesAssinatura = [
+        dados.aluno.nome,
         dados.instrutor.nome,
-        pos.instrutor,
+        dados.responsavelInstitucional
+    ]
+    const assinaturaSize = tamanhoComum(
+        nomesAssinatura,
+        fontes.bold,
+        pos.assinaturas.aluno
+    )
+
+    desenharLinhaUnica(
+        page,
+        dados.aluno.nome,
+        { ...pos.assinaturas.aluno, size: assinaturaSize },
         fontes.bold,
         cores.verde
     )
 
-    const cargo = {
-        ...pos.instrutor,
-        y: pos.instrutor.y - 18,
-        size: 10,
-        maxWidth: 500
-    }
-    desenharCentralizado(page, dados.instrutor.cargo, cargo, fontes.regular, cores.cinza)
+    desenharLinhaUnica(
+        page,
+        dados.instrutor.nome,
+        { ...pos.assinaturas.instrutor, size: assinaturaSize },
+        fontes.bold,
+        cores.verde
+    )
 
-    if (dados.certificado.codigo) {
-        desenharTextoDireita(
+    desenharLinhaUnica(
+        page,
+        dados.responsavelInstitucional,
+        { ...pos.assinaturas.institucional, size: assinaturaSize },
+        fontes.bold,
+        cores.verde
+    )
+
+    if (dados.instrutor.registroTst) {
+        desenharLinhaUnica(
             page,
-            `Código: ${dados.certificado.codigo}`,
-            pos.codigo,
+            dados.instrutor.registroTst,
+            pos.registroTst,
+            fontes.regular,
+            cores.texto
+        )
+    }
+
+    desenharPeriodo(
+        page,
+        pos.dataAssinatura,
+        dividirData(dados.certificado.dataConclusao),
+        pos.dataAssinatura.y,
+        pos.dataAssinatura.size,
+        fontes.regular,
+        cores.texto
+    )
+
+    const meta = []
+    if (dados.aluno.cpf) meta.push(`CPF: ${dados.aluno.cpf}`)
+    if (dados.certificado.codigo) {
+        meta.push(`Código de validação: ${dados.certificado.codigo}`)
+    }
+    if (dados.certificado.nota != null) {
+        meta.push(`Nota: ${formatarNota(dados.certificado.nota)}`)
+    }
+
+    if (meta.length) {
+        desenharLinhaUnica(
+            page,
+            meta.join('   ·   '),
+            pos.meta,
             fontes.regular,
             cores.cinza
         )
     }
-
-    desenharFoto(page, fotoImagem, pos.foto, cores)
 
     if (opcoes.debugCoordenadas) {
         desenharGuia(page, pos, fontes.regular, cores.vermelho)
@@ -453,7 +733,7 @@ function desenharLista(page, itens, x, y, fontes, cores) {
 
     for (const item of itens) {
         const linhas = quebrarTexto(
-            `- ${item}`,
+            textoPdf(`- ${item}`),
             fontes.regular,
             10,
             LARGURA_PAGINA - x - 90
@@ -481,20 +761,27 @@ function desenharDados(page, dados, x, y, fontes, cores) {
         ['Aluno', dados.aluno.nome],
         ['CPF', dados.aluno.cpf],
         ['Curso', dados.curso.nome],
-        ['Carga horária', `${dados.curso.cargaHoraria} horas`],
+        ['Carga horária', dados.curso.cargaHoraria != null ? `${dados.curso.cargaHoraria} horas` : ''],
         ['Data de conclusão', dados.certificado.dataConclusao],
         ['Código', dados.certificado.codigo || '-']
     ]
 
+    if (dados.curso.periodoInicio || dados.curso.periodoFim) {
+        linhas.splice(4, 0, [
+            'Período',
+            [dados.curso.periodoInicio || '____', dados.curso.periodoFim || '____'].join(' a ')
+        ])
+    }
+
     if (dados.certificado.nota != null) {
-        linhas.push(['Nota', String(dados.certificado.nota)])
+        linhas.push(['Nota', formatarNota(dados.certificado.nota)])
     }
 
     let atual = y
     const larguraValor = LARGURA_PAGINA - x - 220
 
     for (const [rotulo, valor] of linhas) {
-        page.drawText(`${rotulo}:`, {
+        page.drawText(textoPdf(`${rotulo}:`), {
             x,
             y: atual,
             size: 10,
@@ -502,7 +789,7 @@ function desenharDados(page, dados, x, y, fontes, cores) {
             color: cores.verde
         })
 
-        const partes = quebrarTexto(String(valor), fontes.regular, 10, larguraValor)
+        const partes = quebrarTexto(textoPdf(valor), fontes.regular, 10, larguraValor)
         for (const parte of partes) {
             page.drawText(parte, {
                 x: x + 125,
@@ -577,17 +864,20 @@ function desenharVerso(page, fontes, cores, dados) {
     })
 
     let y = ALTURA_PAGINA - 165
+    let numeroSecao = 1
 
-    y = desenharSecao(page, '1. CONTEÚDO PROGRAMÁTICO', y, fontes, cores)
-    y = desenharLista(page, dados.curso.conteudoProgramatico, 110, y, fontes, cores)
+    if (dados.curso.conteudoProgramatico.length) {
+        y = desenharSecao(page, `${numeroSecao++}. CONTEÚDO PROGRAMÁTICO`, y, fontes, cores)
+        y = desenharLista(page, dados.curso.conteudoProgramatico, 110, y, fontes, cores)
+        y -= 18
+    }
 
-    y -= 18
-    y = desenharSecao(page, '2. NORMAS E REFERÊNCIAS', y, fontes, cores)
+    y = desenharSecao(page, `${numeroSecao++}. NORMAS E REFERÊNCIAS`, y, fontes, cores)
     y = desenharLista(page, dados.curso.normas, 110, y, fontes, cores)
 
     y -= 18
-    y = desenharSecao(page, '3. DADOS DO CERTIFICADO', y, fontes, cores)
-    y = desenharDados(page, dados, 110, y, fontes, cores)
+    y = desenharSecao(page, `${numeroSecao++}. DADOS DO CERTIFICADO`, y, fontes, cores)
+    desenharDados(page, dados, 110, y, fontes, cores)
 
     const assinaturaY = 210
     desenharAssinatura(
@@ -617,7 +907,9 @@ function desenharVerso(page, fontes, cores, dados) {
     })
 
     page.drawText(
-        `Certificado ${dados.certificado.codigo || '-'} | Emitido em ${dados.certificado.dataConclusao} | sulsafe.com.br`,
+        textoPdf(
+            `Certificado ${dados.certificado.codigo || '-'} | Emitido em ${dados.certificado.dataConclusao || '-'} | sulsafe.com.br`
+        ),
         {
             x: 90,
             y: 58,
@@ -664,18 +956,6 @@ async function carregarImagemBytes(origem, rotulo = 'imagem do certificado') {
     }
 
     return new Uint8Array(await resposta.arrayBuffer())
-}
-
-async function embedImagem(pdfDoc, bytes) {
-    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-        return pdfDoc.embedPng(bytes)
-    }
-
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
-        return pdfDoc.embedJpg(bytes)
-    }
-
-    throw new Error('Formato de foto não suportado. Use JPG ou PNG.')
 }
 
 function nomeArquivoCertificado(dados) {
@@ -735,12 +1015,14 @@ function baixarPdf(pdfBytes, nomeArquivo) {
 /**
  * Gera o PDF (frente + verso) e retorna os bytes, sem baixar.
  *
- * @param {object} aluno { nome_completo, cpf, email, foto_url, fotoBytes }
- * @param {object} curso { nr_id, nome, carga_horaria, conteudoProgramatico, normas }
+ * @param {object} aluno { nome_completo, cpf, email }
+ * @param {object} curso { nr_id, nome, carga_horaria, periodoInicio, periodoFim, conteudoProgramatico, normas }
  * @param {object} [opcoes]
- * @param {object} [opcoes.instrutor] { nome_completo }
- * @param {string|URL} [opcoes.fotoUrl] Foto do aluno (URL assinada ou data URL).
- * @param {Uint8Array|ArrayBuffer} [opcoes.fotoBytes] Foto do aluno em JPG/PNG.
+ * @param {object} [opcoes.instrutor] { nome_completo, registro_tst }
+ * @param {string} [opcoes.instrutorRegistroTst] Registro TST do instrutor.
+ * @param {string} [opcoes.responsavelInstitucional] Nome do responsável institucional.
+ * @param {string} [opcoes.periodoInicio]
+ * @param {string} [opcoes.periodoFim]
  * @param {string} [opcoes.codigo]
  * @param {number} [opcoes.nota]
  * @param {string|Date} [opcoes.dataConclusao]
@@ -779,18 +1061,6 @@ export async function criarCertificadoPDF(aluno, curso, opcoes = {}) {
     )
     const imagem = await pdfDoc.embedPng(imagemBytes)
 
-    let fotoImagem = null
-    const fotoOrigem = dados.aluno.fotoBytes || dados.aluno.fotoUrl
-
-    if (fotoOrigem) {
-        try {
-            const fotoBytes = await carregarImagemBytes(fotoOrigem, 'foto do aluno')
-            fotoImagem = await embedImagem(pdfDoc, fotoBytes)
-        } catch (error) {
-            console.warn('Foto do aluno não pôde ser incluída no certificado:', error)
-        }
-    }
-
     const frente = pdfDoc.addPage([LARGURA_PAGINA, ALTURA_PAGINA])
     frente.drawImage(imagem, {
         x: 0,
@@ -798,7 +1068,7 @@ export async function criarCertificadoPDF(aluno, curso, opcoes = {}) {
         width: LARGURA_PAGINA,
         height: ALTURA_PAGINA
     })
-    desenharFrente(frente, fontes, cores, dados, opcoes, fotoImagem)
+    desenharFrente(frente, fontes, cores, dados, opcoes)
 
     const verso = pdfDoc.addPage([LARGURA_PAGINA, ALTURA_PAGINA])
     desenharVerso(verso, fontes, cores, dados)
