@@ -115,3 +115,19 @@ test('helpers do cliente não expõem chave e usam as RPCs corretas', () => {
     assert.match(cliente, /functions\.invoke\('tutor-sulsafe'/)
     assert.doesNotMatch(cliente, /api_key|Bearer /)
 })
+
+test('Edge Function retenta falhas transitórias e usa mensagem pt-BR', () => {
+    assert.match(edge, /chamarProvedorComRetentativa/)
+    assert.match(edge, /chamarProvedorComRetentativa\(config\[0\] as ConfigIA, job\.prompt\)/)
+    assert.match(edge, /tentativas = 3/)
+    assert.match(edge, /status === 429 \|\| status >= 500/)
+    assert.match(edge, /temporariamente indisponível por alta demanda/)
+})
+
+test('cliente extrai a mensagem da Edge Function em vez do erro genérico', () => {
+    assert.match(cliente, /erroAmigavelFunction/)
+    assert.match(cliente, /error\?\.context/)
+    assert.match(cliente, /contexto\.clone/)
+    assert.match(cliente, /corpo\?\.error\?\.message \|\| corpo\?\.message/)
+    assert.match(cliente, /throw await erroAmigavelFunction\(error\)/)
+})

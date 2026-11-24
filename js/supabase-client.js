@@ -1245,13 +1245,34 @@ export async function sbCriarJobTutor({ titulo, prompt, tipo, provedor = null })
     }
 }
 
+/** Extrai a mensagem em pt-BR devolvida pela Edge Function, quando houver. */
+async function erroAmigavelFunction(error) {
+    const contexto = error?.context
+    if (contexto && typeof contexto.json === 'function') {
+        try {
+            const resposta = typeof contexto.clone === 'function' ? contexto.clone() : contexto
+            const corpo = await resposta.json()
+            const mensagem = corpo?.error?.message || corpo?.message
+            if (mensagem) {
+                const amigavel = new Error(String(mensagem))
+                amigavel.codigo = corpo?.error?.code || null
+                amigavel.status = contexto.status
+                return amigavel
+            }
+        } catch (_) {
+            // Mantém o erro original se o corpo não for JSON.
+        }
+    }
+    return error
+}
+
 /** Dispara a Edge Function. O worker atualiza o job e grava o rascunho. */
 export async function sbGerarComTutor(jobId) {
     try {
         const { data, error } = await sb.functions.invoke('tutor-sulsafe', {
             body: { job_id: jobId }
         })
-        if (error) throw error
+        if (error) throw await erroAmigavelFunction(error)
         if (data?.error) throw new Error(data.error.message || 'Falha na geração')
         return { data, error: null }
     } catch (error) {

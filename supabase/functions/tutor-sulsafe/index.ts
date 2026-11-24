@@ -56,6 +56,8 @@ type ContratoTutor = {
     }>
 }
 
+type ErroProvedor = Error & { status?: number }
+
 function resposta(body: unknown, status = 200): Response {
     return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS })
 }
@@ -232,10 +234,36 @@ async function chamarProvedor(config: ConfigIA, prompt: string): Promise<any> {
 
     if (!resposta.ok) {
         const detalhe = await resposta.text().catch(() => '')
-        throw new Error(`Provedor de IA retornou ${resposta.status}: ${cortar(detalhe, 200)}`)
+        const status = resposta.status
+        const mensagem = status === 503 || status === 429
+            ? 'O provedor de IA está temporariamente indisponível por alta demanda. Tente novamente em instantes.'
+            : `Provedor de IA retornou ${status}: ${cortar(detalhe, 200)}`
+        const erro = new Error(mensagem) as ErroProvedor
+        erro.status = status
+        throw erro
     }
 
     return await resposta.json()
+}
+
+/** Retenta apenas falhas transitórias do provedor (429/5xx), com backoff curto. */
+export async function chamarProvedorComRetentativa(config: ConfigIA, prompt: string): Promise<any> {
+    const tentativas = 3
+    let ultimoErro: ErroProvedor | null = null
+
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+        try {
+            return await chamarProvedor(config, prompt)
+        } catch (erro) {
+            ultimoErro = erro as ErroProvedor
+            const status = Number(ultimoErro?.status) || 0
+            const transiente = status === 429 || status >= 500
+            if (!transiente || tentativa === tentativas) break
+            await new Promise(resolve => setTimeout(resolve, 400 * 2 ** (tentativa - 1)))
+        }
+    }
+
+    throw ultimoErro || new Error('Falha ao chamar o provedor de IA')
 }
 
 Deno.serve(async (req: Request) => {
@@ -318,7 +346,7 @@ Deno.serve(async (req: Request) => {
             const { data: config, error: erroConfig } = await supabase.rpc('sulsafe_obter_config_ia_worker')
             if (erroConfig || !config?.length) throw new Error(erroConfig?.message || 'Professor I.A. não configurado')
 
-            const respostaProvedor = await chamarProvedor(config[0] as ConfigIA, job.prompt)
+            const respostaProvedor = await chamarProvedorComRetentativa(config[0] as ConfigIA, job.prompt)
             outline = extrairOutline(respostaProvedor)
         }
 
