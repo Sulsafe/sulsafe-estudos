@@ -1,7 +1,7 @@
 # ROADMAP_SULSAFE.md — Governança e direção da plataforma
 
 Documento adaptado do `ROADMAP.md` da MR Tecnologia para a realidade da SulSafe.
-**Plano de trabalho.** O deploy foi autorizado e executado em 24/11/2026 no projeto `acqbidvknbqppkjidvsq`: 11 migrations aplicadas, chave no Vault, configuração Gemini ativa e duas Edge Functions deployadas. O push do código ao GitHub continua bloqueado até autorização expressa.
+**Plano de trabalho.** O deploy foi autorizado e executado em 24/11/2026 no projeto `acqbidvknbqppkjidvsq`: 12 migrations aplicadas, chave no Vault, configuração Gemini ativa e duas Edge Functions deployadas. O push ao GitHub foi autorizado e executado; a Vercel acompanha a branch `main`.
 
 ---
 
@@ -24,7 +24,7 @@ Restrição de arquitetura: **não há Docker, não há Next.js e não haverá m
 | Execução | 100% local no navegador, sem API e sem internet | API plugável (SulSafe ou do cliente) |
 | Função | Navegar pelas 38 NRs, páginas, certificado, trabalho, boletim; recusar gabarito | Criar curso, palestra e avaliação; distribuir por turma |
 | Chave de API | Nenhuma | Supabase Vault, nunca no front |
-| Estado | **Implementada e testada** | **Só estrutura/config pronta; geração não implementada** |
+| Estado | **Implementada e testada** | **Implementada e homologada**: geração real, revisão, materialização e distribuição por turma/trilha ou catálogo da NR |
 | Visibilidade | Sempre disponível | Botão "Criar com I.A" oculto por padrão |
 | Provedores | Não se aplica | `sulsafe_api`, `openai`, `gemini`, `anthropic`, `custom` |
 
@@ -54,7 +54,7 @@ Restrição de arquitetura: **não há Docker, não há Next.js e não haverá m
 | **1 — Contrato de dados** | Tabelas `ia_jobs` / `ia_conteudos` com `status`, `aprovado`, `criado_por`, `empresa_id`, `aprovado_por`; decisão multiempresa aplicada | **CONCLUÍDA localmente** (`20261124010000_ia_jobs_conteudos.sql`, 8 testes) |
 | **2 — Fila + adaptador** | RPC cria job; worker consome; adaptador por provedor via Vault; testes com stub, sem chave real | **CONCLUÍDA localmente** (`20261124030000_tutor_worker_config.sql`, `supabase/functions/tutor-sulsafe/index.ts`) |
 | **3 — Revisão humana** | Tela ADMIN/PROFESSOR para aprovar/rejeitar rascunho; RLS esconde rascunho do aluno | **CONCLUÍDA localmente** (`js/views/tutor.js`, `20261124020000_tutor_materializacao.sql`). **Item em aberto (UX/Admin):** reenviar convite / realocar conta existente quando o e-mail já está cadastrado — hoje a Edge Function `admin-convidar-usuario` responde "Já existe uma conta com este e-mail." |
-| **4 — Geração real** | Ementa → módulos → aulas → questões; depois palestra e distribuição por turma | Parcial: ementa e materialização em videoaula/material prontas; questões e distribuição por turma pendentes |
+| **4 — Geração real** | Ementa → módulos → aulas → questões; depois palestra e distribuição por turma | Parcial: ementa, materialização em videoaula/material e **distribuição por turma/trilha ou catálogo da NR** prontas; questões automáticas pendentes |
 | **5 — Cobrança e escala** | Registro manual em `transacoes`, BYOA por empresa, auditoria completa | NÃO INICIADA |
 
 Cada fase só avança para deploy com autorização do proprietário. O trabalho local continua para manter o contrato pronto e testado.

@@ -112,6 +112,7 @@ Ainda depende de decisão: o ingresso na SulSafe deve ser **por convite/aprovaç
 | **D-TUTOR-12 (PRÉ-APROVADA — evolução futura)** | **Opção C — tabela `usuario_empresas`.** Fica aprovada para ser implementada quando houver demanda real de multiempresa (um usuário pertencer a mais de uma empresa). Fora de escopo desta etapa: tabela de vínculo, múltiplos vínculos e gestão de domínios. |
 | **D-TUTOR-13 (DESCARTADA)** | **Opção D — claim por domínio de e-mail.** Descartada por risco de segurança (domínios compartilhados/não verificados permitiriam falsificar vínculo). |
 | **D-TUTOR-14 (CORRIGIDA NO DEPLOY)** | A extração de `vault:<nome>` usava `substring(... from 6)` e devolvia o nome com os dois-pontos iniciais, fazendo a RPC acusar chave ausente no Vault. Corrigida para `from 7` na migration original e na migration 20261124050000, com teste de regressão. |
+| **D-TUTOR-15 (DECIDIDA)** | **Distribuição explícita após a materialização.** A tela do Tutor oferece três destinos: turma/trilha/aluno individual (vínculo em `turma_materiais`, aluno vê em Meus Cursos/Trilhas), catálogo global da NR (`publico = true`) ou rascunho interno. A ementa completa acompanha a descrição do conteúdo, e `sulsafe_publicar_conteudo_tutor` registra quem decidiu a liberação. Continua proibido publicar automaticamente. |
 
 ---
 
@@ -125,7 +126,8 @@ Ainda depende de decisão: o ingresso na SulSafe deve ser **por convite/aprovaç
 | 2026-11-24 | Revisão de arquitetura | RPC aprovada; parser corrigido; deploy condicionado ao status |
 | 2026-11-24 | Origem do claim `empresa_id` | D-TUTOR-11 (Opção A), D-TUTOR-12 (pré-aprovada), D-TUTOR-13 (descartada) |
 | 2026-11-24 | Correção da referência do Vault no worker | D-TUTOR-14 (migration 20261124050000) |
-| 2026-11-24 | Deploy autorizado e executado | 11 migrations, Vault, config Gemini, 2 Edge Functions e smoke test REAL |
+| 2026-11-24 | Deploy autorizado e executado | 12 migrations, Vault, config Gemini, 2 Edge Functions e smoke test REAL |
+| 2026-11-24 | Distribuição do conteúdo gerado | D-TUTOR-15 (turma/trilha, catálogo ou rascunho interno) |
 | 2026-11-24 | Cadastro e verificação | DEC-003 (pendente) |
 | 2026-11-24 | MFA por role | DEC-004 (pendente) |
 | 2026-11-24 | Aplicação remota | DEC-005 (pendente) |

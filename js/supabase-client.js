@@ -1338,3 +1338,31 @@ export async function sbMaterializarRascunhoTutor({
         return { data: null, error }
     }
 }
+
+/** Vincula o conteúdo materializado a turmas, trilhas ou atendimentos individuais. */
+export async function sbDirecionarConteudoTutor(conteudoId, turmaIds) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_direcionar_conteudo_tutor', {
+            p_conteudo_id: conteudoId,
+            p_turma_ids: turmaIds
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/** Libera o conteúdo materializado para o catálogo da NR (decisão humana). */
+export async function sbPublicarConteudoTutor(conteudoId, publico = true) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_publicar_conteudo_tutor', {
+            p_conteudo_id: conteudoId,
+            p_publico: publico
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}

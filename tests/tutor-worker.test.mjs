@@ -13,6 +13,7 @@ const main = ler('../js/main.js')
 const admin = ler('../js/views/admin.js')
 const professor = ler('../js/views/professor.js')
 const materializacao = ler('../supabase/migrations/20261124020000_tutor_materializacao.sql')
+const distribuicao = ler('../supabase/migrations/20261124100000_tutor_distribuicao.sql')
 const extrator = ler('../supabase/functions/tutor-sulsafe/extrair-json.js')
 
 test('Edge Function usa service_role e nunca recebe chave do navegador', () => {
@@ -87,7 +88,7 @@ test('flag de habilitação não devolve segredos', () => {
 test('front do Tutor escapa saída da IA e não pede chave', () => {
     assert.match(front, /escapeHTML\(contrato\.titulo\)/)
     assert.match(front, /escapeHTML\(aula\.descricao\)/)
-    assert.match(front, /publico = false/)
+    assert.match(front, /Rascunho interno/)
     assert.doesNotMatch(front, /api[_-]?key|localStorage\.setItem/)
     assert.match(front, /window\.tutorGerar/)
 })
@@ -130,4 +131,32 @@ test('cliente extrai a mensagem da Edge Function em vez do erro genérico', () =
     assert.match(cliente, /contexto\.clone/)
     assert.match(cliente, /corpo\?\.error\?\.message \|\| corpo\?\.message/)
     assert.match(cliente, /throw await erroAmigavelFunction\(error\)/)
+})
+
+test('Tutor mostra para onde o conteúdo vai após a materialização', () => {
+    assert.match(front, /Como o conteúdo chega ao aluno/)
+    assert.match(front, /Para onde vai\?/)
+    assert.match(front, /Turma, trilha ou aluno individual/)
+    assert.match(front, /Todos os alunos \(catálogo da NR\)/)
+    assert.match(front, /Meus Cursos \/ Trilhas/)
+    assert.match(front, /tutorAbrirDistribuir/)
+    assert.match(front, /tutorPublicarDireto/)
+    assert.match(front, /tutorConfirmarRejeicao/)
+    assert.doesNotMatch(front, /window\.prompt/)
+    assert.doesNotMatch(front, /window\.confirm/)
+})
+
+test('cliente e migration expõem direcionamento e publicação auditáveis', () => {
+    assert.match(cliente, /sbDirecionarConteudoTutor/)
+    assert.match(cliente, /sulsafe_direcionar_conteudo_tutor/)
+    assert.match(cliente, /sbPublicarConteudoTutor/)
+    assert.match(cliente, /sulsafe_publicar_conteudo_tutor/)
+
+    assert.match(distribuicao, /create or replace function public\.sulsafe_materializar_rascunho_tutor/)
+    assert.match(distribuicao, /Ementa aprovada/)
+    assert.match(distribuicao, /create or replace function public\.sulsafe_direcionar_conteudo_tutor/)
+    assert.match(distribuicao, /insert into public\.turma_materiais/)
+    assert.match(distribuicao, /create or replace function public\.sulsafe_publicar_conteudo_tutor/)
+    assert.match(distribuicao, /materializado_destino/)
+    assert.match(distribuicao, /revoke all on function public\.sulsafe_publicar_conteudo_tutor/)
 })

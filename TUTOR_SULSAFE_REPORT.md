@@ -18,10 +18,14 @@ Fluxo da tela:
    - título, descrição, público-alvo, objetivos;
    - módulos e aulas em `<details>` (revisão visual, sem edição — igual à MR).
 4. O usuário **Aprova** ou **Rejeita** (com motivo).
-5. Depois de aprovado, escolhe **Materializar**: informa a NR (1–38) e o destino (videoaula ou material com URL https).
-6. O registro criado aparece com `publico = false` — **a liberação para alunos é uma decisão humana separada**.
+5. Depois de aprovado, escolhe **Materializar**: informa a NR (1–38), o formato (videoaula ou material com URL https) e **para onde vai**:
+   - **Turma, trilha ou aluno individual** — vincula o conteúdo em `turma_materiais`; o aluno vê em **Meus Cursos / Trilhas**;
+   - **Todos os alunos (catálogo da NR)** — publica o item no catálogo da NR;
+   - **Só salvar como rascunho interno** — mantém `publico = false`, visível só para ADMIN/PROFESSOR.
+6. A ementa completa (módulos e aulas) fica anexada à descrição do conteúdo materializado.
+7. Mesmo após materializar, o botão **Ajustar distribuição** permite trocar o destino; **Publicar para todos / Tornar privado** faz a liberação ou o recolhimento.
 
-Nada é publicado automaticamente. Aluno não vê rascunho (RLS).
+Nada é publicado automaticamente. Aluno não vê rascunho (RLS). A liberação continua sendo decisão humana explícita.
 
 ---
 
@@ -44,16 +48,17 @@ Nada é publicado automaticamente. Aluno não vê rascunho (RLS).
 - `supabase/migrations/20261124030000_tutor_worker_config.sql` — leitura da chave do Vault só para `service_role` + flag leve para a UI.
 - `supabase/migrations/20261124040000_empresas_convite.sql` — tabela mínima `empresas`, RLS e RPC `sulsafe_pode_convidar_empresa` (D-TUTOR-11, Opção A).
 - `supabase/migrations/20261124050000_corrige_referencia_vault.sql` — corrige a extração do nome do segredo (`vault:` tem 6 caracteres; o nome começa na posição 7). Sem isso, a RPC devolvia "Chave de API ... não encontrada no Vault" (D-TUTOR-14).
+- `supabase/migrations/20261124100000_tutor_distribuicao.sql` — anexa a ementa à descrição materializada e adiciona `sulsafe_direcionar_conteudo_tutor` / `sulsafe_publicar_conteudo_tutor`, com trilha de quem decidiu a distribuição.
 - `supabase/functions/admin-convidar-usuario/index.ts` — convite do ADMIN com `service_role`; injeta `app_metadata: { empresa_id }` no `createUser`, envia o link e ajusta o perfil, com rollback se o envio falhar.
 - `supabase/functions/tutor-sulsafe/index.ts` — worker com modos REAL e STUB, adaptador nativo → pt-BR, tratamento de erro.
 - `supabase/functions/tutor-sulsafe/extrair-json.js` — parser único (Deno + Node) que captura bloco markdown em qualquer posição ou o trecho entre o primeiro `{` e o último `}`; JSON inválido lança erro e vira job `ERRO`. Exigido pela revisão de arquitetura.
 - `js/tutor-sulsafe.js` — módulo puro (prompt, extração de NRs, adaptador, validação).
 - `js/views/tutor.js` — tela do botão e da revisão humana.
-- `tests/ia-jobs-conteudos.test.mjs`, `tests/tutor-sulsafe.test.mjs`, `tests/tutor-materializacao.test.mjs`, `tests/tutor-worker.test.mjs`, `tests/tutor-json.test.mjs`, `tests/empresas-convite.test.mjs`.
+- `tests/ia-jobs-conteudos.test.mjs`, `tests/tutor-sulsafe.test.mjs`, `tests/tutor-materializacao.test.mjs`, `tests/tutor-worker.test.mjs`, `tests/tutor-json.test.mjs`, `tests/tutor-distribuicao.test.mjs`, `tests/empresas-convite.test.mjs`.
 
 ### Arquivos alterados
 
-- `js/supabase-client.js` — helpers `sbCriarJobTutor`, `sbGerarComTutor`, `sbTutorHabilitado`, `sbListarRascunhosTutor`, `sbRevisarRascunhoTutor`, `sbMaterializarRascunhoTutor`, `sbListarEmpresas`, `sbCriarEmpresa`, `sbConvidarUsuarioEmpresa`.
+- `js/supabase-client.js` — helpers `sbCriarJobTutor`, `sbGerarComTutor`, `sbTutorHabilitado`, `sbListarRascunhosTutor`, `sbRevisarRascunhoTutor`, `sbMaterializarRascunhoTutor`, `sbDirecionarConteudoTutor`, `sbPublicarConteudoTutor`, `sbListarEmpresas`, `sbCriarEmpresa`, `sbConvidarUsuarioEmpresa` e extração da mensagem pt-BR da Edge Function em `erroAmigavelFunction`.
 - `js/main.js` / `js/app.js` — registro da view `tutor` e item de menu.
 - `js/views/admin.js` — placeholder "Criar com I.A" virou atalho real; painel "Empresas e Convites" (cadastro de empresa + envio de convite).
 - `js/views/professor.js` — botão "Criar com o TUTOR-Sulsafe" no topo da Área do Professor.
