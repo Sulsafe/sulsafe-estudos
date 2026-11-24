@@ -12,7 +12,8 @@ import {
     sbUploadArquivo,
     STORAGE_BUCKET,
     sbGetAlunos,
-    sbCriarNotificacao
+    sbCriarNotificacao,
+    sbExcluirMaterial
 } from './supabase-client.js'
 
 export function vMateriais() {
@@ -335,10 +336,8 @@ window.excluirMaterial = async function (id) {
     }
 
     try {
-        const { error } = await sb
-            .from('materiais')
-            .delete()
-            .eq('id', id)
+        // RPC atômica: remove vínculos com turmas antes do material.
+        const { error } = await sbExcluirMaterial(id)
 
         if (error) {
             handleError(error)

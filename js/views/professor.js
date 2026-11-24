@@ -50,6 +50,9 @@ export function vProfessor() {
     <div class="god-hd">
         <h2><i class="fas fa-chalkboard-user"></i> Área do Professor</h2>
         <p>Gerencie videoaulas, materiais, salas, turmas e provas — ${sanitizar(S.user?.nome_completo || '')}</p>
+        <button type="button" class="btn btn-p" style="margin-top:12px" onclick="window.nav('tutor')">
+            <i class="fas fa-wand-magic-sparkles"></i> Criar com o TUTOR-Sulsafe
+        </button>
     </div>
 
     <div class="tabs" style="margin-bottom:24px;flex-wrap:wrap">

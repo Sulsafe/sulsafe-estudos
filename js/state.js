@@ -180,12 +180,15 @@ export function saveCfg() {
     localStorage.setItem('ss_cfg', JSON.stringify(S.cfg))
 }
 
-// Tornar helpers globais para facilitar eventos inline
-window.nav = nav
-window.uid = uid
-window.role = role
-window.isAdmin = isAdmin
-window.isProf = isProf
-window.canManage = canManage
-window.stC = stC
-window.cCard = cCard
+// Tornar helpers globais para facilitar eventos inline.
+// O guard permite importar este módulo em testes Node, onde não há window.
+if (typeof window !== 'undefined') {
+    window.nav = nav
+    window.uid = uid
+    window.role = role
+    window.isAdmin = isAdmin
+    window.isProf = isProf
+    window.canManage = canManage
+    window.stC = stC
+    window.cCard = cCard
+}

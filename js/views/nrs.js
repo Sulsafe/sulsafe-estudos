@@ -16,7 +16,6 @@ export function vNRs() {
         <button class="btn btn-sm btn-p" style="width:auto;flex:none;" onclick="filterNR('all')">Todas</button>
         <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('gerais')">Gerais</button>
         <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('especificas')">Específicas</button>
-        <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('saude')">Saúde</button>
         <button class="btn btn-sm btn-s" style="width:auto;flex:none;" onclick="filterNR('setoriais')">Setoriais</button>
     </div>`
     h += `<input class="search" placeholder="Buscar NR..." oninput="filterNRT(this.value)">

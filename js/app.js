@@ -5,9 +5,19 @@
 import { ADMIN_EMAIL, toast, sanitizar, $, $$ } from './utils.js'
 import { sbGetNotificacoes, sbMarcarNotificacaoLida, sbMarcarTodasNotificacoesLidas } from './supabase-client.js'
 import { S, role, uid, nav, fmtD } from './state.js'
+import { escapeHTML } from './chat-seguro.js'
 
 let listaNotificacoes = []
 let unreadCount = 0
+
+// Allowlist de destinos de notificação. O link vem do banco (professor/admin
+// pode inserir notificações), então nunca pode virar JS inline arbitrário.
+const LINKS_NOTIFICACAO = new Set([
+    'inicio', 'videoaulas', 'trilhas', 'materiais', 'salas', 'nrs', 'ia',
+    'forum', 'boletim', 'provas', 'certificados', 'admin', 'config',
+    'pendentes', 'professor', 'central', 'almoxarifado', 'dossie',
+    'auditoria-dossies'
+])
 
 // Notificações padrão de boas-vindas / fallback se tabela estiver vazia
 const NOTIFS_SISTEMA = [
@@ -34,7 +44,7 @@ export function renderSB() {
     if (!sidebar) return
     const r = role()
     const admin = r === 'admin' || r === 'super_admin'
-    const userNome = S.user?.nome_completo || 'Aluno SulSafe'
+    const userNome = sanitizar(S.user?.nome_completo || 'Aluno SulSafe')
 
     // Define a view ativa de forma segura
     const currentView = S.view || S.currentView || 'inicio'
@@ -119,6 +129,7 @@ export function renderSB() {
 
     if (r === 'professor' || admin) {
         academicItems.push({ id: 'professor', icon: 'fa-chalkboard-user', label: 'Área do Professor' })
+        academicItems.push({ id: 'tutor', icon: 'fa-wand-magic-sparkles', label: 'Criar com o TUTOR-Sulsafe' })
     }
 
     academicItems.push({ id: 'config', icon: 'fa-gear', label: 'Configurações' })
@@ -166,6 +177,7 @@ export function renderSB() {
     `
 
     sidebar.innerHTML = h
+    ligarNotificacoes(document.getElementById('sbNotifList'))
 }
 
 function renderNotificacoesHTML() {
@@ -183,7 +195,7 @@ function renderNotificacoesHTML() {
         const timeAgo = n.criado_em ? fmtD(n.criado_em) : 'Hoje'
 
         return `
-            <div class="sb-notif-item ${unread ? 'unread' : ''}" onclick="window.clicarNotificacao('${n.id}', '${n.link || ''}')">
+            <div class="sb-notif-item ${unread ? 'unread' : ''}" data-notif-id="${escapeHTML(n.id)}" role="button" tabindex="0">
                 <div class="sb-notif-item-ic">
                     <i class="fas ${n.link === 'forum' ? 'fa-comments' : n.link === 'boletim' ? 'fa-chart-line' : 'fa-info-circle'}"></i>
                 </div>
@@ -195,6 +207,21 @@ function renderNotificacoesHTML() {
             </div>
         `
     }).join('')
+}
+
+// Liga os eventos sem interpolar nenhum dado do banco em código JS inline.
+function ligarNotificacoes(container) {
+    if (!container) return
+    container.querySelectorAll('[data-notif-id]').forEach((item) => {
+        const abrir = () => clicarNotificacao(item.dataset.notifId)
+        item.addEventListener('click', abrir)
+        item.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                abrir()
+            }
+        })
+    })
 }
 
 export function renderV(view) {
@@ -275,6 +302,7 @@ function atualizarBadgeNotificacoes() {
     const listContainer = document.getElementById('sbNotifList')
     if (listContainer) {
         listContainer.innerHTML = renderNotificacoesHTML()
+        ligarNotificacoes(listContainer)
     }
 }
 
@@ -286,11 +314,15 @@ export function toggleNotifDropdown(event) {
     }
 }
 
-export async function clicarNotificacao(id, link) {
+export async function clicarNotificacao(id, linkFallback) {
     const notif = listaNotificacoes.find(n => String(n.id) === String(id))
     if (notif) {
         notif.lida = true
     }
+
+    // O link é sempre validado contra a allowlist, venha do banco ou do fallback.
+    const linkBruto = notif ? notif.link : linkFallback
+    const link = LINKS_NOTIFICACAO.has(linkBruto) ? linkBruto : ''
 
     try {
         await sbMarcarNotificacaoLida(id)

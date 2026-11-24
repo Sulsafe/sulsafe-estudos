@@ -4,6 +4,7 @@
 import { S, NRS, role, uid, nav, fmtD } from '../state.js'
 import { sbGetMensagensForum, sbCriarMensagemForum } from '../supabase-client.js'
 import { openMdl, closeMdl, toast, sanitizar, $, $$ } from '../utils.js'
+import { escapeHTML } from '../chat-seguro.js'
 
 let forumPosts = []
 let tabelaInexistenteAviso = false
@@ -240,7 +241,7 @@ function renderListaDuvidas() {
 
                 <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd2);padding-top:12px;font-size:12px;color:var(--tx3)">
                     <span><i class="fas fa-comments" style="color:var(--p);margin-right:4px"></i> Discussão acadêmica</span>
-                    <button class="btn btn-sm" style="width: auto; flex: none; btn-s" onclick="window.abrirModalResponder('${p.id}', '${sanitizar(p.topico).replace(/'/g, "\\'")}')">
+                    <button type="button" class="btn btn-sm btn-s btn-responder-forum" data-id="${escapeHTML(p.id)}">
                         <i class="fas fa-reply"></i> Responder / Comentar
                     </button>
                 </div>
@@ -250,6 +251,12 @@ function renderListaDuvidas() {
 
     h += `</div>`
     container.innerHTML = h
+
+    // Nenhum dado do post vai para dentro de onclick: o ID viaja em data-*
+    // e o tópico é lido do array local na hora de abrir o modal.
+    container.querySelectorAll('.btn-responder-forum').forEach((botao) => {
+        botao.addEventListener('click', () => abrirModalResponder(botao.dataset.id))
+    })
 }
 
 function filtrarDuvidasForum() {
@@ -369,13 +376,18 @@ async function salvarNovaDuvida(e) {
     }
 }
 
-function abrirModalResponder(id, topico) {
+function abrirModalResponder(id) {
+    // O tópico nunca é interpolado em JS inline: vem do registro já carregado
+    // e é escapado apenas no contexto de texto do modal.
+    const post = forumPosts.find(p => String(p.id) === String(id))
+    const topico = sanitizar(post?.topico || 'Dúvida')
+
     openMdl(`
         <button class="mdl-x" onclick="window.closeMdl()"><i class="fas fa-times"></i></button>
         <h2 style="font-size:17px;font-weight:800;color:var(--p);margin-bottom:6px">Responder à Dúvida</h2>
         <p style="font-size:12px;color:var(--tx2);margin-bottom:14px">"${topico}"</p>
 
-        <form onsubmit="window.enviarRespostaForum(event, '${id}')">
+        <form id="formRespostaForum">
             <div class="fld">
                 <label>Sua Contribuição ou Resposta</label>
                 <textarea id="respostaForumTexto" rows="4" placeholder="Escreva sua resposta ou explicação técnica..." required style="width:100%;background:var(--ip);border:1px solid var(--bd);border-radius:var(--r);padding:10px;font-size:13px;color:var(--tx);resize:vertical"></textarea>
@@ -385,6 +397,8 @@ function abrirModalResponder(id, topico) {
             </button>
         </form>
     `)
+
+    $('#formRespostaForum')?.addEventListener('submit', (e) => enviarRespostaForum(e, id))
 }
 
 function enviarRespostaForum(e, id) {

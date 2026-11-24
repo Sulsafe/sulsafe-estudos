@@ -23,12 +23,12 @@ export function vConfig() {
     h += `<div class="cfg-bd">`
     h += `<div class="cfg-sc on" id="cfgTema"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Cores do Tema</h3><div class="tema-g">`
     temas.forEach(t => {
-        h += `<div class="tema-o${c.tema === t.id ? ' on' : ''}" onclick="setTema('${t.id}')"><div class="tema-dot" style="background:${t.cor};${t.id === 'escuro' ? 'border:2px solid #555' : ''}"></div>${t.nm}</div>`
+        h += `<div class="tema-o${c.tema === t.id ? ' on' : ''}" onclick="setTema('${t.id}', this)"><div class="tema-dot" style="background:${t.cor};${t.id === 'escuro' ? 'border:2px solid #555' : ''}"></div>${t.nm}</div>`
     })
     h += `</div></div>`
     h += `<div class="cfg-sc" id="cfgVideo"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações de Vídeo</h3><div class="cfg-grp"><label>Qualidade Padrão</label><select id="cfgQual" onchange="window.saveCfg()"><option value="sd"${c.qual === 'sd' ? ' selected' : ''}>SD (480p)</option><option value="hd"${c.qual === 'hd' ? ' selected' : ''}>HD (720p)</option><option value="fhd"${c.qual === 'fhd' ? ' selected' : ''}>Full HD (1080p)</option><option value="auto"${c.qual === 'auto' ? ' selected' : ''}>Automático</option></select></div><div class="cfg-grp"><label>Velocidade</label><select id="cfgSpeed" onchange="window.saveCfg()"><option value="0.75"${c.speed === '0.75' ? ' selected' : ''}>0.75x</option><option value="1"${c.speed === '1' ? ' selected' : ''}>1x</option><option value="1.25"${c.speed === '1.25' ? ' selected' : ''}>1.25x</option><option value="1.5"${c.speed === '1.5' ? ' selected' : ''}>1.5x</option><option value="2"${c.speed === '2' ? ' selected' : ''}>2x</option></select></div></div>`
     h += `<div class="cfg-sc" id="cfgAudio"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações de Áudio</h3><div class="cfg-grp"><label>Volume Geral: <strong id="volVal">${c.vol}%</strong></label><input type="range" id="cfgVol" min="0" max="100" value="${c.vol}" oninput="$('#volVal').textContent=this.value+'%';window.saveCfg()"></div></div>`
-    h += `<div class="cfg-sc" id="cfgGeral"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações Gerais</h3><div class="cfg-grp"><label>Notificações de Novo Conteúdo</label><select onchange="S.cfg.notifs=this.value==='true';window.saveCfg()"><option value="true"${c.notifs !== false ? ' selected' : ''}>Ativadas</option><option value="false"${c.notifs === false ? ' selected' : ''}>Desativadas</option></select></div>${podeEditarNome ? `<div class="cfg-grp"><label>Nome de Exibição</label><input type="text" value="${S.user?.nome_completo || ''}" onchange="atualizarNome(this.value)"></div>` : ''}${S.user?.role === 'aluno' ? '<div class="cfg-grp"><label>Dossiê SISTEC</label><button class="btn btn-p" style="width:auto" onclick="window.nav(\'dossie\')"><i class="fas fa-id-card"></i> Abrir meu dossiê</button></div>' : ''}</div>`
+    h += `<div class="cfg-sc" id="cfgGeral"><h3 style="font-size:16px;font-weight:700;margin-bottom:16px">Configurações Gerais</h3><div class="cfg-grp"><label>Notificações de Novo Conteúdo</label><select onchange="S.cfg.notifs=this.value==='true';window.saveCfg()"><option value="true"${c.notifs !== false ? ' selected' : ''}>Ativadas</option><option value="false"${c.notifs === false ? ' selected' : ''}>Desativadas</option></select></div>${podeEditarNome ? `<div class="cfg-grp"><label>Nome de Exibição</label><input type="text" value="${sanitizar(S.user?.nome_completo || '')}" onchange="atualizarNome(this.value)"></div>` : ''}${S.user?.role === 'aluno' ? '<div class="cfg-grp"><label>Dossiê SISTEC</label><button class="btn btn-p" style="width:auto" onclick="window.nav(\'dossie\')"><i class="fas fa-id-card"></i> Abrir meu dossiê</button></div>' : ''}</div>`
     h += `</div></div>`
     return h
 }
@@ -36,7 +36,11 @@ export function vConfig() {
 async function atualizarNome(nome) {
     if (!S.user) return
 
-    const nomeLimpo = sanitizar(nome).trim()
+    // Guarda texto puro: escapar aqui gravaria entidades HTML no banco e
+    // causaria dupla codificação na próxima renderização.
+    const nomeLimpo = String(nome ?? '')
+        .replace(/[\u0000-\u001F<>]/g, '')
+        .trim()
     if (!nomeLimpo) {
         toast('O nome não pode ficar vazio.', 'err')
         return
@@ -61,12 +65,12 @@ function cfgTab(id, el) {
     $('#' + map[id])?.classList.add('on')
 }
 
-function setTema(id) {
+function setTema(id, el) {
     document.body.className = id === 'verde' ? '' : 't-' + id
     S.cfg.tema = id
-    saveCfg() // <-- usa a importada
+    saveCfg()
     $$('.tema-o').forEach(o => o.classList.remove('on'))
-    event.currentTarget.classList.add('on')
+    el?.classList.add('on')
     toast('Tema alterado!', 'success')
 }
 

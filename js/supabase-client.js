@@ -1,7 +1,9 @@
 // ============================================================
 // SUPABASE CLIENT + CRUD
 // ============================================================
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+// Versão fixa e alinhada ao package-lock.json (2.118.0).
+// Evita divergência entre o código testado no Node e o bundle servido pelo CDN.
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0'
 import { ADMIN_EMAIL, uid, sanitizar, toast, handleError } from './utils.js'
 import { S } from './state.js'
 
@@ -113,6 +115,54 @@ export async function sbBloquearUsuario(id) {
     try {
         const { data, error } = await sb.from('profiles').update({ status: 'bloqueado' }).eq('id', id).select().single()
         if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+// ============================================================
+// EMPRESAS E CONVITES (OPÇÃO A — D-TUTOR-11)
+// ============================================================
+
+/** Empresas visíveis ao ADMIN (RLS) para o cadastro de convites. */
+export async function sbListarEmpresas() {
+    try {
+        const { data, error } = await sb.from('empresas')
+            .select('id, nome, ativo, criado_em')
+            .order('nome', { ascending: true })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/** Somente ADMIN: grava a empresa no catálogo mínimo. */
+export async function sbCriarEmpresa(nome) {
+    try {
+        const { data, error } = await sb.from('empresas')
+            .insert({ nome: String(nome || '').trim() })
+            .select('id, nome, ativo')
+            .single()
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/**
+ * Convida um usuário. A Edge Function valida o JWT do ADMIN e injeta
+ * app_metadata.empresa_id no createUser — o navegador nunca envia o claim.
+ */
+export async function sbConvidarUsuarioEmpresa({ email, nome, empresaId, role }) {
+    try {
+        const { data, error } = await sb.functions.invoke('admin-convidar-usuario', {
+            body: { email, nome, empresa_id: empresaId, role }
+        })
+        if (error) throw error
+        if (data?.error) throw new Error(data.error.message || 'Falha ao enviar o convite')
         return { data, error: null }
     } catch (error) {
         return { data: null, error }
@@ -251,7 +301,62 @@ export async function sbCriarTurma(turma) {
 
 export async function sbExcluirTurma(id) {
     try {
-        const { error } = await sb.from('turmas').delete().eq('id', id)
+        // RPC atômica: remove alunos, conteúdos, provas e a turma numa só transação.
+        const { error } = await sb.rpc('excluir_turma_completo', { p_turma_id: id })
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        return { error }
+    }
+}
+
+// ============================================================
+// EXCLUSÕES ATÔMICAS (RPCs)
+// ============================================================
+
+export async function sbExcluirTrabalho(id) {
+    try {
+        const { error } = await sb.rpc('excluir_trabalho_completo', { p_trabalho_id: id })
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export async function sbExcluirCurso(nrId) {
+    try {
+        const { error } = await sb.rpc('excluir_curso_completo', { p_nr_id: nrId })
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export async function sbExcluirMaterial(id) {
+    try {
+        const { error } = await sb.rpc('excluir_material_completo', { p_material_id: id })
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export async function sbExcluirNota(id) {
+    try {
+        const { error } = await sb.rpc('excluir_nota_completo', { p_nota_id: id })
+        if (error) throw error
+        return { error: null }
+    } catch (error) {
+        return { error }
+    }
+}
+
+export async function sbApagarTudo() {
+    try {
+        const { error } = await sb.rpc('sulsafe_apagar_tudo')
         if (error) throw error
         return { error: null }
     } catch (error) {
@@ -1110,6 +1215,104 @@ export async function sbGetRankingAlunos() {
         const { data, error } = await sb.from('view_ranking_alunos').select('*')
         if (error) throw error
         return { data: error ? null : data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+// ============================================================
+// TUTOR-SULSAFE (PROFESSOR I.A — IA 2)
+// ============================================================
+// A chave de API nunca passa por aqui: ela fica no Vault e é lida somente
+// pela Edge Function. O navegador conversa apenas com RPCs autorizadas.
+
+/**
+ * Cria um job de geração. `prompt` deve ser montado por montarPromptTutor().
+ * @returns { data: string (job_id), error }
+ */
+export async function sbCriarJobTutor({ titulo, prompt, tipo, provedor = null }) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_criar_ia_job', {
+            p_titulo: titulo,
+            p_prompt: prompt,
+            p_tipo: tipo,
+            p_provedor: provedor
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/** Dispara a Edge Function. O worker atualiza o job e grava o rascunho. */
+export async function sbGerarComTutor(jobId) {
+    try {
+        const { data, error } = await sb.functions.invoke('tutor-sulsafe', {
+            body: { job_id: jobId }
+        })
+        if (error) throw error
+        if (data?.error) throw new Error(data.error.message || 'Falha na geração')
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/** Flag leve: o Professor I.A. está configurado e ativo? */
+export async function sbTutorHabilitado() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_tutor_habilitado')
+        if (error) throw error
+        return { data: Boolean(data), error: null }
+    } catch (error) {
+        return { data: false, error }
+    }
+}
+
+/** Lista rascunhos para revisão (ADMIN/PROFESSOR). */
+export async function sbListarRascunhosTutor(jobId = null) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_rascunhos_tutor', {
+            p_job_id: jobId
+        })
+        if (error) throw error
+        return { data: data || [], error: null }
+    } catch (error) {
+        return { data: [], error }
+    }
+}
+
+/** Aprova, rejeita ou publica um rascunho (decisão humana). */
+export async function sbRevisarRascunhoTutor(conteudoId, decisao, observacao = null) {
+    try {
+        const { error } = await sb.rpc('sulsafe_revisar_ia_conteudo', {
+            p_id: conteudoId,
+            p_decisao: decisao,
+            p_observacao: observacao
+        })
+        if (error) throw error
+        return { data: true, error: null }
+    } catch (error) {
+        return { data: false, error }
+    }
+}
+
+/** Materializa o rascunho aprovado em videoaula/material com nr_id. */
+export async function sbMaterializarRascunhoTutor({
+    conteudoId, nrId, destino, titulo = null, descricao = null, url = null
+}) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_materializar_rascunho_tutor', {
+            p_conteudo_id: conteudoId,
+            p_nr_id: nrId,
+            p_destino: destino,
+            p_titulo: titulo,
+            p_descricao: descricao,
+            p_url: url
+        })
+        if (error) throw error
+        return { data, error: null }
     } catch (error) {
         return { data: null, error }
     }

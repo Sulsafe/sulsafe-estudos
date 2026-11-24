@@ -50,15 +50,22 @@ async function carregarPendentes() {
         h += `<tr id="pendente-${u.id}">
             <td><strong>${u.nome_completo}</strong></td>
             <td>${u.email}</td>
-            <td>${fmtD(u.created_at)}</td>
-            <td><button class="btn btn-sm btn-p" onclick="liberarUsuario('${u.id}')"><i class="fas fa-check"></i> Liberar</button></td>
+            <td>${fmtD(u.criado_em)}</td>
+            <td><button type="button" class="btn btn-sm btn-p btn-liberar-pendente" data-id="${u.id}"><i class="fas fa-check"></i> Liberar</button></td>
         </tr>`
     })
     h += `</tbody></table></div></div>`
     container.innerHTML = h
+
+    // Nome próprio e delegação de evento: a tela ADMIN usa window.liberarUsuario
+    // para o botão "Aprovar". Sobrescrever essa global aqui quebrava a aprovação
+    // feita pela lista de pendentes.
+    container.querySelectorAll('.btn-liberar-pendente').forEach(botao => {
+        botao.addEventListener('click', () => liberarPendente(botao.dataset.id))
+    })
 }
 
-async function liberarUsuario(id) {
+async function liberarPendente(id) {
     const { data, error } = await sbLiberarUsuario(id)
     if (error) { handleError(error); return }
     toast('Usuário liberado com sucesso!', 'success')
@@ -72,5 +79,3 @@ async function liberarUsuario(id) {
     const remaining = $$('#listaPendentes tbody tr').length // <- usei teu $$
     if (remaining === 0) carregarPendentes()
 }
-
-window.liberarUsuario = liberarUsuario // <- isso precisa ficar por causa do onclick inline

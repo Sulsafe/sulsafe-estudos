@@ -2,7 +2,7 @@
 // VIEW: BOLETIM (Aluno / Professor)
 // ============================================================
 import { S, role, uid, nav, fmtD, stC, NRS } from '../state.js'
-import { sbGetNotasAluno, sbLancarNota, sbGetAlunos, sb, sbCriarNotificacao } from '../supabase-client.js'
+import { sbGetNotasAluno, sbLancarNota, sbGetAlunos, sb, sbCriarNotificacao, sbExcluirNota } from '../supabase-client.js'
 import { toast, handleError, sanitizar, openMdl, closeMdl, $, $$ } from '../utils.js'
 
 export function vBoletim() {
@@ -119,7 +119,7 @@ async function renderNotasAl() {
 
 async function delNota(id, aid) {
     if (!confirm('Deseja excluir esta nota?')) return
-    const { error } = await sb.from('notas').delete().eq('id', id)
+    const { error } = await sbExcluirNota(id)
     if (error) {
         toast('Erro ao excluir: ' + error.message, 'err')
         return

@@ -25,6 +25,7 @@ import { vCentral } from './views/central.js'
 import { vAlmoxarifado } from './views/almoxarifado.js'
 import { vDossie } from './views/dossie.js'
 import { vAuditoriaDossies } from './views/auditoria-dossies.js'
+import { vTutor } from './views/tutor.js'
 import { initAccessibility } from './accessibility.js'
 
 // Views de catálogo, player e materiais
@@ -51,6 +52,7 @@ registerView('central', vCentral)
 registerView('almoxarifado', vAlmoxarifado)
 registerView('dossie', vDossie)
 registerView('auditoria-dossies', vAuditoriaDossies)
+registerView('tutor', vTutor)
 
 initAccessibility()
 

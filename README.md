@@ -1,6 +1,6 @@
 # 🦺 SulSafe — Plataforma de Cursos de NR Online
 
-Plataforma SaaS de ensino de Segurança do Trabalho com 38 NRs, videoaulas, aulas ao vivo, certificados PDF, trabalhos/avaliações estilo faculdade, IA com pesquisa na internet e pagamentos via Mercado Pago.
+Plataforma SaaS de ensino de Segurança do Trabalho com 38 NRs, videoaulas, aulas ao vivo, certificados PDF, trabalhos/avaliações estilo faculdade, **Secretária interna inclusa (grátis, sem API)** e **TUTOR-Sulsafe / Professor I.A com API plugável (sob consulta)**. A geração cria rascunhos revisáveis por humanos; nada é publicado para alunos sem aprovação. Cobrança manual via orçamento — sem pagamento online.
 
 ## 📦 Arquivos deste pacote
 
@@ -49,25 +49,24 @@ Para mudar o admin master (se quiser):
 1. Abra `js/utils.js` e altere a constante `ADMIN_EMAIL`
 2. A migration do Almoxarifado também valida esse e-mail master (ou `role` igual a `admin`/`super_admin`)
 
-### 4. Configurar Mercado Pago (quando tiver a chave)
+### 4. Configurar o Professor I.A (opcional, cobrado à parte)
 
-Quando você tiver a chave do Mercado Pago:
+A **Secretária** já funciona sem configuração e continua grátis. O Professor I.A é separado:
 
-1. Faça login como admin (`sulsafetreinamentos@gmail.com`)
-2. Vá em "Gerenciar Usuários" → "Configurações da Plataforma"
-3. Cole sua **Public Key** no campo "MERCADO PAGO — PUBLIC KEY"
-4. Clique "Salvar configurações"
-5. Pronto! Os botões "Assinar" e "Pagar boleto" vão funcionar
+1. Aplique a migration `supabase/migrations/20261027000000_config_ia_professor.sql`
+2. Faça login como admin (`sulsafetreinamentos@gmail.com`) e abra o **Modo Deus**
+3. Na seção **PROFESSOR I.A — API**, escolha:
+   - **Desativado** (padrão): o botão "Criar com I.A" fica oculto
+   - **Usar API da SulSafe**: fale com o suporte e negocie o valor — cada empresa tem um preço diferente conforme volume
+   - **Usar minha própria API**: informe provedor (OpenAI, Gemini, Anthropic ou custom), URL `https://`, chave e modelo
+4. Salve. A chave vai direto para o **Supabase Vault**; nunca fica no navegador nem volta em claro na tela
 
-**Para obter a chave**:
-- Sandbox (testes): https://www.mercadopago.com.br/developers/panel/credentials/sandbox
-- Produção: https://www.mercadopago.com.br/developers/panel/credentials
-- Começa com `TEST-` (sandbox) ou `APP_USR-` (produção)
+Com a configuração ativa, o menu mostra **Criar com o TUTOR-Sulsafe**. O fluxo gera a ementa como **rascunho**, exige revisão humana (aprovar/rejeitar) e só materializa em `videoaulas`/`materiais` com `publico = false` após decisão explícita. A chave fica no Supabase Vault e nunca passa pelo navegador.
 
 ## ✨ O que tem nesta versão (Up completo)
 
 ### 🎨 Visual
-- ✅ Nova landing page comercial (hero + 38 NRs + planos + depoimentos + FAQ)
+- ✅ Nova landing page comercial (hero + 38 NRs + depoimentos + FAQ)
 - ✅ App principal redesenhado (glassmorphism, dark mode, animações)
 - ✅ Mascote pop-up melhorado (8 opções de ajuda, frases rotativas, animação)
 - ✅ 7 redes sociais no footer (YouTube, Instagram, WhatsApp, LinkedIn, Facebook, TikTok, X)
@@ -75,17 +74,17 @@ Quando você tiver a chave do Mercado Pago:
 
 ### 👥 3 papéis com permissões (RBAC)
 - 🔵 **ADMIN** (Modo Deus) — `sulsafetreinamentos@gmail.com`:
-  - Vê TUDO: financeiro, usuários, métricas, certificados, configurações
-  - Pode editar preços (R$ 49,90 - R$ 100,00)
-  - Pode promover/rebaixar/suspender usuários
+  - Gerencia usuários, métricas, certificados e configurações
+  - Configura o Professor I.A e registra cobranças manuais
+  - Pode promover/rebaixar/bloquear usuários
 - 🟢 **PROFESSOR** — só ensina:
-  - Subir materiais, criar trabalhos, dar notas
-  - Gerar certificados dos alunos
-  - **NÃO vê** dinheiro/faturamento
+  - Sobe materiais, cria trabalhos, dá notas
+  - Gera certificados dos alunos
+  - **NÃO vê** cobranças nem configuração de API
 - 🟡 **ALUNO** — só estuda:
   - Videoaulas, aulas ao vivo, materiais, NRs
-  - Vê só **seus próprios boletos**
-  - Usa Assistente NR (IA)
+  - Vê só seu boletim e seus certificados
+  - Usa a Secretária inclusa
   - Faz trabalhos e avaliações
 
 ### 📜 Gerador de Certificado PDF
@@ -97,15 +96,14 @@ Quando você tiver a chave do Mercado Pago:
 - Pré-visualização em tempo real
 - Gera PDF com jsPDF
 
-### 💰 Financeiro + Mercado Pago
-- **Admin**: vê todos os pagamentos, faturamento, métricas
-- **Aluno**: vê só seus boletos + plano atual
-- **Professor**: não vê nada de dinheiro
-- 3 planos: Mensal R$ 49,90 / Trimestral R$ 129,90 / Anual R$ 399,90
-- Admin pode editar preços quando quiser
-- Mercado Pago SDK integrado (só colar a chave)
-- Registrar pagamento manual (alternativa sem MP)
-- Histórico de pagamentos + comprovante PDF
+### 💰 Cobrança manual (sem pagamento online)
+- **Não há Mercado Pago, planos fixos nem checkout na plataforma**
+- O admin registra o pagamento manualmente em `transacoes`, com motivo como
+  `Ativação Professor I.A - Empresa X - Valor Y`
+- Valores são negociados caso a caso, por orçamento — não existe tabela de preços
+- **Professor I.A com API da SulSafe**: cobrado à parte, valor conforme volume
+- **Professor I.A com API própria**: a empresa paga a API dela; a SulSafe só faz a ponte
+- **Secretária**: inclusa, grátis, sem custo adicional
 
 ### 📝 Trabalhos e Avaliações (estilo UniCesumar)
 - Cards em grade com badges coloridos de status
@@ -117,46 +115,52 @@ Quando você tiver a chave do Mercado Pago:
 - Avaliações com questões de múltipla escolha + nota automática
 - Boletim integrado (60% trabalhos + 40% avaliações)
 
-### 🤖 Assistente NR com IA + Internet
-- Chat com IA (Gemini via Supabase Edge Function)
-- **Pesquisa na internet em tempo real** (DuckDuckGo via proxy CORS)
-- Mostra fontes consultadas em cada resposta
-- Botões de perguntas rápidas
-- Contextualizado por NR
-- Fallback gracioso (resposta local se internet/IA falharem)
+### 🤖 Duas IAS separadas (não confundir)
 
-### 📚 38 NRs vigentes com explicações
+**IA 1 — Secretária SulSafe (inclusa, grátis, sempre local)**
+- Recepcionista da plataforma: não cria curso, não corrige prova, não dá gabarito
+- Sabe onde fica cada página e o conteúdo dos cards das 38 NRs
+- Responde com base em `js/base-conhecimento-sulsafe.js` — sem API, sem internet, sem custo
+- Recusa gabarito de prova e perguntas fora da SulSafe
+- Toda saída passa pelo sanitizador `js/chat-seguro.js`
+
+**IA 2 — TUTOR-Sulsafe / Professor I.A (com API, cobrada à parte)**
+- Cria cursos, palestras e avaliações a partir de um assunto ("Crie um curso sobre NR 35 para novos colaboradores")
+- Usa as 38 NRs locais como contexto; converte a saída para o contrato pt-BR `{ titulo, descricao, publicoAlvo, objetivos, modulos }`
+- API plugável (BYOA): API da SulSafe, OpenAI, Gemini, Anthropic ou custom
+- Configurada somente pelo ADMIN; chave no Supabase Vault
+- **Human-in-the-Loop obrigatório**: geração vira rascunho; aluno nunca vê; publicar é decisão separada
+- Empresas e convites em **Modo Deus → Empresas e Convites** gravam `app_metadata.empresa_id` no JWT pela Edge Function
+- Cobrança manual por orçamento — sem Mercado Pago
+
+### 📚 38 NRs do catálogo com explicações
 Todas as 38 Normas Regulamentadoras cadastradas com:
-- Número (NR-01 a NR-38)
+- Número (NR-01 a NR-38, incluindo as revogadas NR-02 e NR-27 como referência histórica)
 - Título completo
-- Categoria (Geral / Específica / Saúde / Setorial)
+- Categoria (Gerais / Específicas / Setoriais)
 - Ícone (emoji)
 - Descrição resumida
 - Objetivos principais (lista)
+- Link para o PDF oficial
 - Busca + filtros por categoria
 
 ## 🔧 Configurações necessárias no Supabase
 
-Algumas tabelas precisam ser criadas no Supabase Studio → SQL Editor. O SQL completo está documentado nos comentários dentro do `login.html` (procure por `CREATE TABLE`).
+As migrations ficam em `supabase/migrations/`. Aplique no Supabase Studio → SQL Editor:
+- `20261026000000_exclusao_atomica.sql` — RPCs de exclusão atômica + tabelas `trabalhos`/`trabalhos_submissao`
+- `20261027000000_config_ia_professor.sql` — tabela `config_ia_professor` e RPCs do Professor I.A
 
-Tabelas necessárias:
-- `profiles` (provavelmente já existe)
-- `transacoes` (provavelmente já existe)
-- `trabalhos` (novo — SQL no código)
-- `trabalhos_submissao` (novo — SQL no código)
-- `certificados_emitidos` (novo — SQL no código)
-
-Se alguma tabela não existir, o código falha graciosamente (mostra mensagem mas não quebra).
+Tabelas usadas: `profiles`, `transacoes` (cobrança manual) e as criações acima. Se alguma não existir, a tela mostra mensagem gracefulmente sem quebrar o app.
 
 ## 🎯 Próximos passos recomendados
 
-1. ✅ Subir os arquivos no GitHub (5 min)
-2. ⏳ Criar tabelas no Supabase (15 min — SQL no código)
-3. ⏳ Conseguir chave do Mercado Pago (1 dia)
-4. ⏳ Configurar MP Public Key no painel admin (1 min)
-5. ⏳ Subir suas assinaturas digitais (5 min)
-6. ⏳ Testar com 1-2 alunos reais (1 dia)
-7. 🚀 Começar a vender!
+1. ✅ Subir os arquivos no GitHub
+2. ⏳ Aplicar as migrations de exclusão atômica e de `config_ia_professor`
+3. ⏳ Testar a Secretária (já inclusa, sem configuração)
+4. ⏳ Negociar o Professor I.A com o suporte **ou** configurar a API própria no Modo Deus
+5. ⏳ Registrar a ativação manualmente em `transacoes` (motivo: Empresa X / Valor Y)
+6. ⏳ Testar com 1-2 alunos reais
+7. 🚀 Publicar o front atualizado no domínio e concluir o teste com convite real e conta Aluno
 
 ## 📞 Suporte
 

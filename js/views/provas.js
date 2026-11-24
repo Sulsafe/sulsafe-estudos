@@ -4,6 +4,13 @@
 import { S, role, uid, nav, fmtD, NRS } from '../state.js'
 import { sbEnviarProva, sbGetProvasPendentes, sbCorrigirProva, sbGetProvasAluno, sbGetProvasDirecionadasAluno, sbUploadArquivo, STORAGE_BUCKET } from '../supabase-client.js'
 import { openMdl, closeMdl, $, $$, toast, sanitizar, handleError } from '../utils.js'
+import { hrefSeguro } from '../chat-seguro.js'
+
+// Só links http(s) viram âncora. Qualquer esquema javascript:/data: cai em '—'.
+function linkArquivoSeguro(url) {
+    const href = hrefSeguro(url)
+    return /^https?:\/\//i.test(href) ? sanitizar(href) : ''
+}
 
 export function vProvas() {
     const r = role()
@@ -152,7 +159,7 @@ async function carregarMinhasProvas() {
             <td>${sanitizar(p.titulo) || 'Atividade Prática'}</td>
             <td><span class="badge ${statusCor}">${statusTexto}</span></td>
             <td><strong>${p.nota !== null && p.nota !== undefined ? p.nota : '—'}</strong></td>
-            <td>${p.arquivo_url ? `<a href="${p.arquivo_url}" target="_blank" class="btn btn-sm btn-s"><i class="fas fa-download"></i> Ver PDF</a>` : '—'}</td>
+            <td>${linkArquivoSeguro(p.arquivo_url) ? `<a href="${linkArquivoSeguro(p.arquivo_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-s"><i class="fas fa-download"></i> Ver PDF</a>` : '—'}</td>
             <td>${fmtD(p.criado_em)}</td>
         </tr>`
     })
@@ -182,7 +189,7 @@ async function carregarProvasPendentes() {
             <td><strong>${sanitizar(p.profiles?.nome_completo) || 'Aluno'}</strong><br><span style="font-size:11px;color:var(--tx3)">${sanitizar(p.profiles?.email) || ''}</span></td>
             <td>NR ${p.nr_id}</td>
             <td>${sanitizar(p.titulo) || 'Prova'}</td>
-            <td>${p.arquivo_url ? `<a href="${p.arquivo_url}" target="_blank" class="btn btn-sm btn-s"><i class="fas fa-file-pdf"></i> Abrir PDF</a>` : '—'}</td>
+            <td>${linkArquivoSeguro(p.arquivo_url) ? `<a href="${linkArquivoSeguro(p.arquivo_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-s"><i class="fas fa-file-pdf"></i> Abrir PDF</a>` : '—'}</td>
             <td>${fmtD(p.criado_em)}</td>
             <td>
                 <button class="btn btn-sm btn-p" onclick="abrirCorrecao('${p.id}')"><i class="fas fa-check"></i> Avaliar</button>
