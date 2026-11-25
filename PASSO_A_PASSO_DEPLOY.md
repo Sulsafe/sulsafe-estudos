@@ -1,7 +1,7 @@
 # PASSO_A_PASSO_DEPLOY.md — Fase 5 (Etapas 1-8)
 
 **Data:** 25/11/2026
-**Status do documento (atualizado em 25/11/2026):** a **seção 3 foi executada** mediante autorização explícita — as 8 migrações da Fase 5 estão aplicadas e validadas no remoto (`RELATORIO_DEPLOY_FASE1_MIGRACOES.md`). As seções 4 a 6 (**Edge Function, GitHub e Vercel**) seguem **não executadas**.
+**Status do documento (atualizado em 25/11/2026):** as **seções 3, 4 e 5 foram executadas** mediante autorização explícita — 8 migrações aplicadas e validadas, Edge Function `tutor-sulsafe` publicada na versão 3 e código enviado ao GitHub no commit `e2198a3`. A **seção 6 (Vercel)** segue **não executada**.
 
 Este passo a passo cobre a promoção da Fase 5 do Agente Direcionado: 8 migrations locais (`20261125000000` a `20261125070000`), rotas em `api/`, telas em `js/views/`, o exportador CSV da Etapa 8 e os contratos Zod compartilhados.
 
@@ -89,33 +89,37 @@ limit 12;
 
 ---
 
-## 4. Atualizar a Edge Function do Professor I.A
+## 4. Atualizar a Edge Function do Professor I.A — ✔ EXECUTADO EM 25/11/2026
 
 A Fase 5 mudou o worker `tutor-sulsafe` (dispatcher `PROVA`/`MODULO`, leitura de `ia_jobs.quantidade_questoes` e contrato Zod). Após as migrations:
 
 ```bash
-npx supabase functions deploy tutor-sulsafe --project-ref acqbidvknbqppkjidvsq
+npx supabase functions deploy tutor-sulsafe --project-ref acqbidvknbqppkjidvsq --yes
 ```
 
-- Confirmar no painel que a função está ativa e que **não** há `TUTOR_SULSAFE_STUB=1` em produção (modo STUB é só homologação).
-- A chave Gemini continua no Vault sob `sulsafe_ia_chave_global`; não reenviar chave pelo chat nem pelo navegador.
-- `admin-convidar-usuario` não foi alterada na Etapa 8; redeploy somente se houver mudança pendente desse código.
+Na CLI 3.4.0, o primeiro comando sem `--yes` parou em `HostedMutationConsentRequiredError` sem alterar nada; a seguinte confirmação explícita foi autorizada pelo proprietário. O deploy subiu `index.ts`, `processar-job-fase5.js`, `extrair-json.js` e `js/tutor-contratos-fase5-core.js`. `functions list` confirma `tutor-sulsafe` **ACTIVE, versão 3**, `verify_jwt: true`. O aviso `Docker is not running` não impediu o deploy (CLI usou upload direto).
+
+- Confirmação remota: `status ACTIVE`, `version 3`, atualizado em 25/11/2026; `admin-convidar-usuario` permanece na versão 1.
+- A chave Gemini continua no Vault sob `sulsafe_ia_chave_global`; não reenviar chave pelo chat nem pelo navegador. Nenhuma variável de ambiente foi alterada no deploy.
+- Não foi possível inspecionar variáveis pelo painel nesta sessão; a checagem de `TUTOR_SULSAFE_STUB` deve ser feita no dashboard antes do smoke real.
 
 ---
 
-## 5. Enviar o código ao GitHub
+## 5. Enviar o código ao GitHub — ✔ EXECUTADO EM 25/11/2026
 
-A pasta de trabalho atual **não é um repo Git ativo**. Antes do push, sincronizar os arquivos alterados para um clone do repositório oficial:
+A pasta de trabalho não é um repo Git ativo; por isso o commit foi feito em um clone temporário do repositório oficial, sincronizado com a árvore de trabalho. Antes do commit: varredura de segredos nos 176 arquivos do clone (**0 achados**, apenas a `anon key` pública), `npm ci` sem vulnerabilidades, `npm test` (281 verdes) e `npm run check` (44 arquivos, 0 problemas).
 
 ```bash
 git clone https://github.com/Sulsafe/sulsafe-estudos.git sulsafe-estudos
 cd sulsafe-estudos
 git status --short
 git diff --stat
-git add <arquivos alterados>
-git commit -m "feat: fase 5 etapas 1-8 — provas I.A., painel do professor e exportação CSV"
+git add -A
+git commit -m "feat(fase5): agente direcionado com provas e modulos, HITL, distribuicao e exportacao CSV"
 git push origin main
 ```
+
+Resultado: commit **`e2198a3a92e76bb04703c8ec0d3a4b13f34ae735`** (65 arquivos, 12.929 inserções, 85 remoções). `git ls-remote` confirma `HEAD` e `refs/heads/main` em `e2198a3` — o push foi aceito, sem force push e sem reescrita de histórico (`2d929cf..e2198a3`). Nenhum `.env`, chave de serviço ou token foi incluído.
 
 Arquivos que fazem parte desta entrega (além dos relatórios e da governança): as 8 migrations listadas em §3; `supabase/functions/tutor-sulsafe/`; `api/tutor/` e `api/aluno/provas/`; `js/views/provas-*.js`, `js/views/prova-aluno-ia.js`, `js/supabase-client.js`, `js/tutor-contratos-fase5-core.js`, `js/exportar-resultados-ia.js`, `js/main.js`, `js/app.js`; `package.json`/`package-lock.json`; `vercel.json`; suítes em `tests/`.
 
@@ -151,15 +155,15 @@ Arquivos que fazem parte desta entrega (além dos relatórios e da governança):
 
 ## 8. Checklist de aceite para autorizar o deploy
 
-- [x] Autorização do proprietário registrada (banco, 25/11/2026).
-- [ ] `npm test` (281) e `npm run check` verdes no clone sincronizado.
-- [ ] Backup recente conferido no Supabase.
+- [x] Autorização do proprietário registrada (banco e Fase 2 em 25/11/2026).
+- [x] `npm test` (281) e `npm run check` verdes no clone sincronizado.
+- [ ] Backup recente conferido no Supabase (registrado como pendente em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md`).
 - [x] `npx supabase migration list --linked` mostrando as 8 migrations aplicadas (25/25 no total).
-- [ ] `tutor-sulsafe` redeployada e sem modo STUB.
-- [ ] Push em `main` aceito pelo GitHub.
+- [x] `tutor-sulsafe` redeployada (v3, ACTIVE). Checagem de `TUTOR_SULSAFE_STUB` no painel ainda pendente.
+- [x] Push em `main` aceito pelo GitHub (`e2198a3`).
 - [ ] Vercel `Ready / Production` em `sulsafe-estudos-4ppk`.
 - [ ] Smoke real: distribuição → realização → resultados → CSV exportado legível no Excel.
 - [ ] Isolamento entre empresas confirmado com conta real.
-- [ ] Nenhuma chave de serviço, token de provedor ou senha em arquivo/log/resposta.
+- [x] Nenhuma chave de serviço, token de provedor ou senha em arquivo/log/resposta (varredura no clone: 176 arquivos, 0 achados).
 
-> Este documento é um roteiro. A seção 3 foi executada em 25/11/2026 com autorização e está relatada em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md`. As seções 4 a 7 dependem de autorização e **não foram executadas**.
+> Este documento é um roteiro. As seções 3 a 5 foram executadas em 25/11/2026 com autorização; evidências do banco em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md` e da Fase 2 em `RELATORIO_DEPLOY_FASE2.md`. A seção 6 (Vercel) depende de nova autorização e **não foi executada**.

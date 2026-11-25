@@ -55,7 +55,7 @@ Restrição de arquitetura: **não há Docker, não há Next.js e não haverá m
 | **2 — Fila + adaptador** | RPC cria job; worker consome; adaptador por provedor via Vault; testes com stub, sem chave real | **CONCLUÍDA e aplicada ao remoto** (`20261124030000_tutor_worker_config.sql`, `supabase/functions/tutor-sulsafe/index.ts`) |
 | **3 — Revisão humana** | Tela ADMIN/PROFESSOR para aprovar/rejeitar rascunho; RLS esconde rascunho do aluno | **CONCLUÍDA e aplicada ao remoto** (`js/views/tutor.js`, `20261124020000_tutor_materializacao.sql`). **Item em aberto (UX/Admin):** reenviar convite / realocar conta existente quando o e-mail já está cadastrado — hoje a Edge Function `admin-convidar-usuario` responde "Já existe uma conta com este e-mail." |
 | **4 — Geração real** | Ementa → módulos → aulas → questões; depois palestra e distribuição por turma | Parcial: ementa, materialização em videoaula/material e **distribuição por turma/trilha ou catálogo da NR** prontas; questões automáticas pendentes (Fase 5) |
-| **5 - Agente Direcionado** | Prova, módulo e palestra gerados por agente, revisados, distribuídos para turma/aluno/catálogo com notificação e realizados pelo aluno com correção automática | **EM IMPLANTAÇÃO - capítulo 10**; Etapas 1-8/8 e 3.1 implementadas e testadas (281 testes); **8 migrations aplicadas e validadas no remoto em 25/11/2026**; Edge Function, GitHub e Vercel ainda não publicados. Roteiro em `PASSO_A_PASSO_DEPLOY.md`, evidência em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md` |
+| **5 - Agente Direcionado** | Prova, módulo e palestra gerados por agente, revisados, distribuídos para turma/aluno/catálogo com notificação e realizados pelo aluno com correção automática | **EM IMPLANTAÇÃO - capítulo 10**; Etapas 1-8/8 e 3.1 implementadas e testadas (281 testes); **banco (8 migrations), Edge Function `tutor-sulsafe` v3 e GitHub (`e2198a3`) publicados em 25/11/2026**; Vercel ainda não publicada. Roteiro em `PASSO_A_PASSO_DEPLOY.md`, evidências em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md` e `RELATORIO_DEPLOY_FASE2.md` |
 | **6 — Cobrança e escala** | Registro manual em `transacoes`, BYOA por empresa, auditoria completa | NÃO INICIADA |
 
 Cada fase só avança para deploy com autorização do proprietário. O trabalho local continua para manter o contrato pronto e testado.
@@ -123,7 +123,7 @@ Fluxo: proposta → decisão registrada → implementação local → testes →
 
 ---
 
-## 10. Fase 5 - O Agente Direcionado (EM IMPLANTAÇÃO - Etapas 1-8 e 3.1/8 concluídas em 25/11/2026; banco aplicado ao remoto)
+## 10. Fase 5 - O Agente Direcionado (EM IMPLANTAÇÃO - Etapas 1-8 e 3.1/8 concluídas em 25/11/2026; banco, Edge Function e GitHub publicados)
 
 **Objetivo do proprietário:** o usuário pede, o agente cria, o usuário analisa, aprova e escolhe o destino; o sistema distribui e notifica. Exemplo real: *"Crie uma prova com 10 questões sobre o curso X"* ou *"crie um módulo sobre assunto tal"*, destinando depois à turma/aluno "x".
 
@@ -133,7 +133,7 @@ Fluxo: proposta → decisão registrada → implementação local → testes →
 2. **Um destino por pedido.** Todos os itens gerados no mesmo job (questões, módulos, roteiro) recebem o mesmo endereço escolhido pelo revisor.
 3. **Reaproveitar, não reconstruir.** `ia_jobs`/`ia_conteudos`, RLS por empresa, `sulsafe_revisar_ia_conteudo`, `sulsafe_direcionar_conteudo_tutor`, `sulsafe_publicar_conteudo_tutor`, `turma_materiais`, `provas_direcionadas`, `notificacoes` e a atual tela do Tutor.
 4. **Mesma infra da Fase 4.** Supabase + Edge Function + Postgres/RLS/RPC. Sem Docker, Next.js, Redis, LiveKit ou OpenMAIC local. Chave apenas no Vault.
-5. **Nada de novo em produção sem autorização.** O banco da Fase 5 foi promovido em 25/11/2026 com autorização explícita (`npx supabase db push --remote --yes`, 8 migrations, 0 pendentes); Edge Function, GitHub e Vercel seguem intactos até autorização específica. As seções 4 a 6 de `PASSO_A_PASSO_DEPLOY.md` não foram executadas.
+5. **Nada de novo em produção sem autorização.** Banco, Edge Function e GitHub foram promovidos em 25/11/2026 com autorização explícita: 8 migrations (`--remote --yes`), `tutor-sulsafe` v3 e push `e2198a3`. A Vercel segue intacta até autorização específica; a seção 6 de `PASSO_A_PASSO_DEPLOY.md` não foi executada.
 
 ### 10.2 Fluxo ponta a ponta e estados
 
@@ -207,7 +207,8 @@ Fluxo: proposta → decisão registrada → implementação local → testes →
 6.1. ✅ **CONCLUÍDA (Etapa 3.1/8, somente local):** quantidade de questões parametrizada do Admin ao prompt/contrato/persistência, com limite de 50 em quatro camadas. Nova migration `20261125060000`; 20 questões persistidas e 100 bloqueadas em PGlite. Relatório em `RELATORIO_FASE5_ETAPA3_1.md`.
 7. ✔ **CONCLUÍDA (Etapa 7/8, somente local):** acompanhamento do professor em `/admin/provas-resultados` — listagem, filtro, detalhe com gabarito e correção manual de discursivas. Nova migration `20261125070000`, rotas GET/GET/POST com JWT do chamador + chave anônima, TDD com 7 testes de RLS Empresa A/B, nota correta e gabarito restrito. Smoke visual em harness local com dados simulados, 0 erros de console. Nada aplicado ao remoto. Relatório em `RELATORIO_FASE5_ETAPA7.md`.
 8. ✔ **CONCLUÍDA (Etapa 8/8, somente local):** exportação CSV de resultados em `/admin/provas-resultados` (BOM UTF-8, `;`, cabeçalhos pt-BR, escape e anti-fórmula), coberta por 5 novos testes, e roteiro `PASSO_A_PASSO_DEPLOY.md` com migrations, Edge Function, push, Vercel, smoke e rollback. Varredura de segredos limpa; 281 testes verdes. Na ocasião nada havia sido aplicado ao remoto, deployado ou pushado.
-9. ✔ **DEPLOY FASE 1 CONCLUÍDO (25/11/2026, somente banco):** autorização explícita → `npx supabase link --project-ref acqbidvknbqppkjidvsq` → `npx supabase db push --remote --yes` aplicou as 8 migrations; `migration list` passou de 17 para 25/25 aplicadas. Validação read-only: 6 tabelas novas com RLS ON, `ia_jobs.quantidade_questoes` com CHECK 1..50, 29 RPCs `SECURITY DEFINER` com `search_path=""` e sem `anon`/`public` nas críticas. Evidência em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md`. **Edge Function, GitHub e Vercel não foram publicados** — exigem nova autorização.
+9. ✔ **DEPLOY FASE 1 CONCLUÍDO (25/11/2026, somente banco):** autorização explícita → `npx supabase link --project-ref acqbidvknbqppkjidvsq` → `npx supabase db push --remote --yes` aplicou as 8 migrations; `migration list` passou de 17 para 25/25 aplicadas. Validação read-only: 6 tabelas novas com RLS ON, `ia_jobs.quantidade_questoes` com CHECK 1..50, 29 RPCs `SECURITY DEFINER` com `search_path=""` e sem `anon`/`public` nas críticas. Evidência em `RELATORIO_DEPLOY_FASE1_MIGRACOES.md`.
+10. ✔ **DEPLOY FASE 2 CONCLUÍDO (25/11/2026, Edge Function e GitHub):** autorização explícita → `npx supabase functions deploy tutor-sulsafe --project-ref acqbidvknbqppkjidvsq --yes` → v3 `ACTIVE`/`verify_jwt true`; clone sincronizado com varredura de 176 arquivos/0 segredos, 281 testes e `npm run check` limpos; commit `e2198a3` enviado a `main`. Evidência em `RELATORIO_DEPLOY_FASE2.md`. **Vercel não foi publicada** — exige nova autorização.
 
 ### 10.7 O que NÃO fazer nesta fase
 

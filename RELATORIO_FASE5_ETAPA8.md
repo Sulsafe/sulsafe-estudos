@@ -61,6 +61,6 @@ Criado `PASSO_A_PASSO_DEPLOY.md` com roteiro **não executado**:
 
 ## 7. Fora do escopo / pendente
 
-- Na execução desta etapa, `supabase db push`, deploy de Edge Function, push ao GitHub e deploy na Vercel não haviam sido executados. Em autorização posterior (25/11/2026), **`supabase db push --remote --yes` foi executado com sucesso**; veja `RELATORIO_DEPLOY_FASE1_MIGRACOES.md`. Deploy de Edge Function, push ao GitHub e deploy na Vercel seguem **não executados**.
-- Nenhuma conta real de aluno/professor foi usada; a validação ponta a ponta com login real depende da publicação do front (seções 4 a 6 do roteiro de deploy).
+- Na execução desta etapa nada havia sido publicado. Em autorizações posteriores (25/11/2026), **`supabase db push --remote --yes`** (`RELATORIO_DEPLOY_FASE1_MIGRACOES.md`) e **`supabase functions deploy tutor-sulsafe ... --yes`** (`RELATORIO_DEPLOY_FASE2.md`) foram executados com sucesso, e o código foi enviado ao GitHub no commit `e2198a3`. Deploy na Vercel segue **não executado**.
+- Nenhuma conta real de aluno/professor foi usada; a validação ponta a ponta com login real depende da publicação do front (seção 6 do roteiro de deploy).
 - Nenhuma migration foi criada ou editada na Etapa 8; as mudanças de código se limitam ao painel da Etapa 7, ao novo exportador, ao teste, ao registro do teste em `package.json` e à documentação/governança.
