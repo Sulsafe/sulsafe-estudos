@@ -2,7 +2,7 @@
 // VIEW: PROVAS (Aluno / Professor)
 // ============================================================
 import { S, role, uid, nav, fmtD, NRS } from '../state.js'
-import { sbEnviarProva, sbGetProvasPendentes, sbCorrigirProva, sbGetProvasAluno, sbGetProvasDirecionadasAluno, sbUploadArquivo, STORAGE_BUCKET } from '../supabase-client.js'
+import { sbEnviarProva, sbGetProvasPendentes, sbCorrigirProva, sbGetProvasAluno, sbGetProvasDirecionadasAluno, sbUploadArquivo, sbListarProvasDistribuidasAluno, STORAGE_BUCKET } from '../supabase-client.js'
 import { openMdl, closeMdl, $, $$, toast, sanitizar, handleError } from '../utils.js'
 import { hrefSeguro } from '../chat-seguro.js'
 
@@ -19,6 +19,7 @@ export function vProvas() {
     
     if (r === 'aluno') {
         h += `<p class="wcs">Envie sua avaliação ou trabalho prático em PDF para correção dos instrutores.</p>`
+        h += `<div id="provasIADistribuidasAluno" aria-live="polite"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando avaliações I.A. distribuídas...</p></div></div>`
         h += `<div id="provasDirecionadasAluno"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas e testes direcionados...</p></div></div>`
         h += `<div class="pnl"><div class="pnl-h"><div class="pnl-t"><i class="fas fa-upload"></i> Enviar Nova Prova</div></div>
             <form id="frmEnviarProva" onsubmit="enviarProva(event)">
@@ -38,6 +39,7 @@ export function vProvas() {
         </div>`
         h += `<div id="minhasProvas"><div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando histórico de provas...</p></div></div>`
         setTimeout(carregarProvasDirecionadasAluno, 150)
+        setTimeout(iniciarProvasAlunoIA, 150)
         setTimeout(carregarMinhasProvas, 150)
     } else {
         h += `<p class="wcs">Avalie e lance notas para as atividades enviadas pelos alunos.</p>`
@@ -45,6 +47,42 @@ export function vProvas() {
         setTimeout(carregarProvasPendentes, 150)
     }
     return h
+}
+
+export async function iniciarProvasAlunoIA() {
+    const container = document.getElementById('provasIADistribuidasAluno')
+    if (!container) return
+
+    const { data: provas, error } = await sbListarProvasDistribuidasAluno()
+    if (!container.isConnected) return
+
+    if (error) {
+        container.innerHTML = `<div class="pnl" style="border-left:4px solid #EF6C00">
+            <div class="pnl-t"><i class="fas fa-triangle-exclamation" style="color:#EF6C00"></i> Avaliações I.A.</div>
+            <p style="font-size:12px;color:var(--tx3);margin-top:8px">Não foi possível carregar suas avaliações distribuídas.</p>
+        </div>`
+        return
+    }
+
+    if (!Array.isArray(provas) || provas.length === 0) {
+        container.innerHTML = ''
+        return
+    }
+
+    container.innerHTML = `<div class="pnl">
+        <div class="pnl-h"><div class="pnl-t"><i class="fas fa-graduation-cap"></i> Avaliações I.A. para você</div></div>
+        <div class="tw"><table>
+            <thead><tr><th>Avaliação</th><th>NR</th><th>Distribuída em</th><th>Ação</th></tr></thead>
+            <tbody>
+                ${provas.map(prova => `<tr>
+                    <td><strong>${sanitizar(prova.titulo || 'Avaliação')}</strong>${prova.descricao ? `<br><span style="font-size:11px;color:var(--tx3)">${sanitizar(prova.descricao)}</span>` : ''}</td>
+                    <td>${prova.nr_id ? `NR ${sanitizar(String(prova.nr_id))}` : '—'}</td>
+                    <td>${sanitizar(fmtD(prova.distribuido_em) || '—')}</td>
+                    <td><button type="button" class="btn btn-sm btn-p" onclick="window.nav('/aluno/prova/${sanitizar(prova.prova_id)}')"><i class="fas fa-play"></i> Realizar prova</button></td>
+                </tr>`).join('')}
+            </tbody>
+        </table></div>
+    </div>`
 }
 
 async function carregarProvasDirecionadasAluno() {

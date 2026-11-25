@@ -26,6 +26,10 @@ import { vAlmoxarifado } from './views/almoxarifado.js'
 import { vDossie } from './views/dossie.js'
 import { vAuditoriaDossies } from './views/auditoria-dossies.js'
 import { vTutor } from './views/tutor.js'
+import { vProvasPendentesIA, iniciarProvasPendentesIA } from './views/provas-pendentes-ia.js'
+import { vProvasDistribuicaoIA, iniciarProvasDistribuicaoIA } from './views/provas-distribuicao-ia.js'
+import { vProvaAlunoIA, iniciarProvaAlunoIA, provaIdDaRota } from './views/prova-aluno-ia.js'
+import { vProvasResultadosIA, iniciarProvasResultadosIA } from './views/provas-resultados-ia.js'
 import { initAccessibility } from './accessibility.js'
 
 // Views de catálogo, player e materiais
@@ -53,6 +57,10 @@ registerView('almoxarifado', vAlmoxarifado)
 registerView('dossie', vDossie)
 registerView('auditoria-dossies', vAuditoriaDossies)
 registerView('tutor', vTutor)
+registerView('provas-pendentes-ia', vProvasPendentesIA)
+registerView('provas-distribuicao-ia', vProvasDistribuicaoIA)
+registerView('prova-aluno-ia', vProvaAlunoIA)
+registerView('provas-resultados-ia', vProvasResultadosIA)
 
 initAccessibility()
 
@@ -62,7 +70,38 @@ setRenderSidebar(renderSB)
 window.logout = logout
 window.recuperarSenha = recuperarSenha
 window.showT = showT
-window.nav = nav
+let provaAlunoIdAtual = null
+
+function navComRota(view) {
+    if (view === '/admin/provas-pendentes' || view === 'admin/provas-pendentes') {
+        view = 'provas-pendentes-ia'
+    }
+    if (view === '/admin/provas-distribuicao' || view === 'admin/provas-distribuicao') {
+        view = 'provas-distribuicao-ia'
+    }
+    if (view === '/admin/provas-resultados' || view === 'admin/provas-resultados') {
+        view = 'provas-resultados-ia'
+    }
+    if (typeof view === 'string' && /^\/aluno\/prova\/[^/]+$/i.test(view)) {
+        provaAlunoIdAtual = provaIdDaRota(view)
+        view = 'prova-aluno-ia'
+    }
+    nav(view)
+    if (view === 'provas-pendentes-ia') {
+        setTimeout(iniciarProvasPendentesIA, 0)
+    }
+    if (view === 'provas-distribuicao-ia') {
+        setTimeout(iniciarProvasDistribuicaoIA, 0)
+    }
+    if (view === 'provas-resultados-ia') {
+        setTimeout(iniciarProvasResultadosIA, 0)
+    }
+    if (view === 'prova-aluno-ia') {
+        setTimeout(() => iniciarProvaAlunoIA(provaAlunoIdAtual), 0)
+    }
+}
+
+window.nav = navComRota
 window.toast = toast
 window.renderSB = renderSB
 window.renderV = renderV
@@ -147,6 +186,20 @@ async function encerrarSessaoInvalida() {
 
             S.user = user
             enterDash()
+
+            const rotaInicial = window.location.pathname.replace(/\/+$/, '')
+            if (rotaInicial === '/admin/provas-pendentes') {
+                navComRota('provas-pendentes-ia')
+            }
+            if (rotaInicial === '/admin/provas-distribuicao') {
+                navComRota('provas-distribuicao-ia')
+            }
+            if (rotaInicial === '/admin/provas-resultados') {
+                navComRota('provas-resultados-ia')
+            }
+            if (/^\/aluno\/prova\/[^/]+$/i.test(rotaInicial)) {
+                navComRota(rotaInicial)
+            }
             return
         }
 

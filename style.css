@@ -1472,3 +1472,101 @@ body.t-escuro {
     .dossie-mdl-upload-form .btn { width: 100%; }
     .dossie-mdl-acoes .btn { width: 100%; }
 }
+
+/* ============================================================
+   FASE 5 — ETAPA 6: CABEÇALHO DE CONTEXTO E PROVA DO ALUNO
+   ============================================================ */
+.cabeçalho-contexto {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    padding: 24px 26px 26px;
+    margin-bottom: 22px;
+    color: #fff;
+    background:
+        radial-gradient(circle at 92% -20%, rgba(201,176,55,.22), transparent 42%),
+        linear-gradient(135deg, var(--sb2, #1a2b1e) 0%, var(--p3, #1B5E20) 58%, var(--p, #2E7D32) 100%);
+    box-shadow: var(--shadow-hover);
+}
+.cabeçalho-contexto::after {
+    content: '';
+    position: absolute;
+    inset: auto -40px -70px auto;
+    width: 190px;
+    height: 190px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.ctx-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.ctx-marca { display: flex; align-items: center; gap: 10px; }
+.ctx-logo { width: 34px; height: 34px; object-fit: contain; border-radius: 9px; background: #fff; padding: 3px; }
+.ctx-marca-nome { font-weight: 900; letter-spacing: .04em; font-size: 15px; }
+.ctx-tipo {
+    border: 1px solid rgba(255,255,255,.32);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.08);
+}
+.ctx-olho { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; opacity: .72; margin-bottom: 6px; }
+.ctx-titulo { font-size: clamp(20px, 2.4vw, 28px); font-weight: 900; line-height: 1.2; margin-bottom: 14px; }
+.ctx-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
+.ctx-meta-item { display: inline-flex; align-items: center; gap: 6px; opacity: .92; }
+.ctx-instrucoes {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--gold, #C9B037);
+    border-radius: 8px;
+    background: rgba(0,0,0,.16);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.prova-aluno-ia .questao-ia {
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin: 0 0 14px;
+    background: var(--card-bg);
+}
+.prova-aluno-ia .questao-ia legend { padding: 0 6px; font-size: 14px; font-weight: 700; color: var(--tx); max-width: 100%; }
+.questao-num { display: inline-block; margin-right: 6px; color: var(--p); font-weight: 900; }
+.alternativas-ia { display: grid; gap: 8px; margin-top: 12px; }
+.alternativa-ia {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--bd2, var(--bd));
+    border-radius: 10px;
+    background: var(--ip);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--tx);
+}
+.alternativa-ia:focus-within { outline: 2px solid var(--p); outline-offset: 2px; }
+.alternativa-ia input { margin-top: 2px; accent-color: var(--p); }
+.alternativa-chave {
+    flex: 0 0 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: rgba(46,125,50,.12);
+    color: var(--p);
+    font-weight: 900;
+    font-size: 12px;
+}
+.prova-acoes { display: flex; justify-content: flex-end; margin-top: 6px; }
+.prova-resultado { border-left: 4px solid var(--p); }
+.prova-resultado p { font-size: 13px; color: var(--tx2); margin-top: 6px; }
+@media (max-width: 560px) {
+    .cabeçalho-contexto { padding: 18px; }
+    .ctx-meta { gap: 6px 12px; font-size: 12px; }
+    .prova-acoes { justify-content: stretch; }
+    .prova-acoes .btn { width: 100%; }
+}

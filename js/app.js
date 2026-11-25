@@ -130,6 +130,8 @@ export function renderSB() {
     if (r === 'professor' || admin) {
         academicItems.push({ id: 'professor', icon: 'fa-chalkboard-user', label: 'Área do Professor' })
         academicItems.push({ id: 'tutor', icon: 'fa-wand-magic-sparkles', label: 'Criar com o TUTOR-Sulsafe' })
+        academicItems.push({ id: 'provas-distribuicao-ia', icon: 'fa-paper-plane', label: 'Distribuir Provas (IA)' })
+        academicItems.push({ id: 'provas-resultados-ia', icon: 'fa-chart-simple', label: 'Resultados de Provas (IA)' })
     }
 
     academicItems.push({ id: 'config', icon: 'fa-gear', label: 'Configurações' })
@@ -152,6 +154,7 @@ export function renderSB() {
                 ? [{ id: 'almoxarifado', icon: 'fa-boxes-stacked', label: 'Almoxarifado' }]
                 : []),
             { id: 'pendentes', icon: 'fa-user-clock', label: 'Aprovações' },
+            { id: 'provas-pendentes-ia', icon: 'fa-file-circle-check', label: 'Provas Pendentes (IA)' },
             { id: 'auditoria-dossies', icon: 'fa-folder-open', label: 'Auditoria de Dossiês' },
             { id: 'admin', icon: 'fa-shield-halved', label: 'Modo Deus' }
         ]

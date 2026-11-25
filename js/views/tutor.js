@@ -14,7 +14,17 @@
 import { isProf, isAdmin, nav } from '../state.js'
 import { handleError, $ } from '../utils.js'
 import { escapeHTML } from '../chat-seguro.js'
-import { TIPOS_TUTOR, montarPromptTutor, extrairNRsDoAssunto } from '../tutor-sulsafe.js'
+import {
+    TIPOS_TUTOR,
+    montarPromptTutor,
+    montarPromptBaseFase5,
+    extrairNRsDoAssunto
+} from '../tutor-sulsafe.js'
+import {
+    QUANTIDADE_QUESTOES_PADRAO,
+    QUANTIDADES_PROVA_PERMITIDAS,
+    normalizarQuantidadeQuestoes
+} from '../tutor-contratos-fase5-core.js'
 import {
     sbCriarJobTutor,
     sbGerarComTutor,
@@ -31,10 +41,13 @@ let ultimoResultado = null
 let rascunhos = []
 let turmasTutorCache = []
 
+const TIPO_TUTOR_PROVA = 'PROVA'
+
 const TITULOS_TIPO = Object.freeze({
     MATERIA: 'Matéria de apoio',
     CURSO: 'Curso',
-    PALESTRA: 'Palestra'
+    PALESTRA: 'Palestra',
+    PROVA: 'Prova (múltipla escolha)'
 })
 
 const TIPOS_TURMA = Object.freeze({
@@ -118,6 +131,39 @@ function renderEmenta(contrato) {
             </div>
         </div>
     `
+}
+
+function renderProva(contrato) {
+    if (!contrato) return ''
+
+    const questoes = (contrato.questoes || []).map((questao, i) => `
+        <li style="margin:6px 0">
+            <strong>${i + 1}. ${escapeHTML(questao.enunciado)}</strong>
+            <div style="opacity:.8;font-size:.9em">${escapeHTML(questao.justificativa || '')}</div>
+        </li>
+    `).join('')
+
+    return `
+        <div class="pnl" style="margin-top:18px">
+            <div class="pnl-h"><div class="pnl-t"><i class="fas fa-file-circle-check"></i> Prova gerada — revisão obrigatória</div></div>
+            <div style="padding:14px">
+                <h3 style="margin:0 0 8px">${escapeHTML(contrato.titulo)}</h3>
+                <p>${escapeHTML(contrato.descricao || '')}</p>
+                <p><strong>Questões:</strong> ${(contrato.questoes || []).length}</p>
+                <ol>${questoes}</ol>
+                <p style="opacity:.75;font-size:.9em">
+                    O gabarito fica no rascunho e não é exibido ao aluno antes da materialização.
+                </p>
+                <div id="tutorRevisaoSlot" style="margin-top:16px"></div>
+            </div>
+        </div>
+    `
+}
+
+function renderResultado(contrato) {
+    return contrato && Array.isArray(contrato.questoes)
+        ? renderProva(contrato)
+        : renderEmenta(contrato)
 }
 
 function renderRascunhos() {
@@ -204,11 +250,23 @@ export function vTutor() {
     h += `<div class="pnl"><div class="pnl-h"><div class="pnl-t"><i class="fas fa-plus"></i> Novo conteúdo</div></div><div style="padding:14px">`
     h += `<form id="tutorForm" onsubmit="window.tutorGerar(event)">`
     h += `<label><strong>Tipo</strong><br>
-        <select id="tutorTipo" name="tipo" style="min-width:220px;margin:6px 0 12px">
+        <select id="tutorTipo" name="tipo" style="min-width:220px;margin:6px 0 12px" onchange="window.tutorAlternarQuantidade()">
             <option value="${TIPOS_TUTOR.MATERIA}">${TITULOS_TIPO.MATERIA}</option>
             <option value="${TIPOS_TUTOR.CURSO}" selected>${TITULOS_TIPO.CURSO}</option>
             <option value="${TIPOS_TUTOR.PALESTRA}">${TITULOS_TIPO.PALESTRA}</option>
+            <option value="PROVA">${TITULOS_TIPO.PROVA}</option>
         </select></label><br>`
+    h += `<div id="tutorQuantidadeSlot" style="display:none;margin:0 0 12px">
+        <label><strong>Quantidade de questões</strong><br>
+            <select id="tutorQuantidadeQuestoes" name="quantidadeQuestoes" style="min-width:220px;margin:6px 0">
+                <option value="5">5 questões</option>
+                <option value="10" selected>10 questões</option>
+                <option value="20">20 questões</option>
+                <option value="30">30 questões</option>
+                <option value="50">50 questões</option>
+            </select></label>
+        <p style="opacity:.75;font-size:.9em;margin:0">Limite de segurança: 50 questões por prova.</p>
+    </div>`
     h += `<label><strong>Assunto</strong><br>
         <textarea id="tutorAssunto" name="assunto" rows="3" maxlength="4000"
             placeholder="Ex.: Crie um curso sobre NR 35 para novos colaboradores"
@@ -219,11 +277,12 @@ export function vTutor() {
     h += `<button class="btn btn-p" id="tutorBtnGerar" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Criar com o TUTOR-Sulsafe</button>`
     h += `</form><div id="tutorErro"></div><div id="tutorAvisoConfig"></div></div></div>`
 
-    h += `<div id="tutorEmentaSlot">${ultimoResultado ? renderEmenta(ultimoResultado.contrato) : ''}</div>`
+    h += `<div id="tutorEmentaSlot">${ultimoResultado ? renderResultado(ultimoResultado.contrato) : ''}</div>`
     h += `<h3 style="margin-top:24px"><i class="fas fa-clock-rotate-left"></i> Rascunhos recentes</h3>`
     h += `<div id="tutorListaSlot">${renderRascunhos()}</div>`
 
     // Carrega a lista em background sem bloquear o primeiro render.
+    tutorAlternarQuantidade()
     carregarRascunhos()
     carregarAvisoConfig()
 
@@ -244,6 +303,12 @@ async function carregarAvisoConfig() {
             o provedor em <strong>Modo Deus → PROFESSOR I.A — API</strong>.
         </p>
     `
+}
+
+export function tutorAlternarQuantidade() {
+    const slot = $('#tutorQuantidadeSlot')
+    if (!slot) return
+    slot.style.display = $('#tutorTipo')?.value === TIPO_TUTOR_PROVA ? '' : 'none'
 }
 
 export async function tutorAtualizarNR() {
@@ -276,6 +341,20 @@ export async function tutorGerar(event) {
     const erroSlot = $('#tutorErro')
     const botao = $('#tutorBtnGerar')
 
+    let quantidadeQuestoes = null
+    if (tipo === TIPO_TUTOR_PROVA) {
+        try {
+            quantidadeQuestoes = normalizarQuantidadeQuestoes($('#tutorQuantidadeQuestoes')?.value)
+        } catch (erro) {
+            if (erroSlot) erroSlot.innerHTML = `<p style="color:var(--err,#e44)">${escapeHTML(erro.message)}</p>`
+            return
+        }
+        if (!QUANTIDADES_PROVA_PERMITIDAS.includes(quantidadeQuestoes)) {
+            if (erroSlot) erroSlot.innerHTML = `<p style="color:var(--err,#e44)">Escolha uma quantidade de 5 a 50 questões (padrão: ${QUANTIDADE_QUESTOES_PADRAO}).</p>`
+            return
+        }
+    }
+
     if (erroSlot) erroSlot.innerHTML = ''
     if (!assunto.trim()) {
         if (erroSlot) erroSlot.innerHTML = `<p style="color:var(--err,#e44)">Informe o assunto.</p>`
@@ -289,10 +368,16 @@ export async function tutorGerar(event) {
 
     try {
         const titulo = assunto.trim().slice(0, 160)
-        const prompt = montarPromptTutor({ assunto, tipo, publicoAlvo })
+        const prompt = tipo === TIPO_TUTOR_PROVA
+            ? montarPromptBaseFase5({ assunto, tipo, publicoAlvo })
+            : montarPromptTutor({ assunto, tipo, publicoAlvo })
 
         const { data: jobId, error: erroJob } = await sbCriarJobTutor({
-            titulo, prompt, tipo, provedor: null
+            titulo,
+            prompt,
+            tipo,
+            provedor: null,
+            quantidadeQuestoes: tipo === TIPO_TUTOR_PROVA ? quantidadeQuestoes : null
         })
         if (erroJob) throw erroJob
 
@@ -301,7 +386,7 @@ export async function tutorGerar(event) {
 
         ultimoResultado = data
         const slot = $('#tutorEmentaSlot')
-        if (slot) slot.innerHTML = renderEmenta(data.contrato)
+        if (slot) slot.innerHTML = renderResultado(data.contrato)
 
         const revisao = $('#tutorRevisaoSlot')
         if (revisao) {
@@ -322,7 +407,9 @@ export async function tutorGerar(event) {
         }
 
         await carregarRascunhos()
-        window.toast?.('Ementa gerada. Revise antes de aprovar.', 'success')
+        window.toast?.(tipo === TIPO_TUTOR_PROVA
+            ? 'Prova gerada. Revise antes de aprovar.'
+            : 'Ementa gerada. Revise antes de aprovar.', 'success')
     } catch (error) {
         handleError(error)
         if (erroSlot) {
@@ -667,6 +754,7 @@ export async function tutorPublicarDireto(conteudoId, publico) {
 window.vTutor = vTutor
 window.tutorGerar = tutorGerar
 window.tutorAtualizarNR = tutorAtualizarNR
+window.tutorAlternarQuantidade = tutorAlternarQuantidade
 window.tutorRevisar = tutorRevisar
 window.tutorConfirmarRejeicao = tutorConfirmarRejeicao
 window.tutorCancelarRejeicao = tutorCancelarRejeicao

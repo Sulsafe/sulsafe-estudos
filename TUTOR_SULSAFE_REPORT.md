@@ -1,7 +1,7 @@
 # TUTOR_SULSAFE_REPORT.md — Botão "Criar com o TUTOR-Sulsafe"
 
-**Data:** 24/11/2026
-**Escopo:** Fases 1, 2 e 3 do `ROADMAP_SULSAFE.md`, implementadas, aplicadas ao Supabase e homologadas em produção em 24/11/2026.
+**Data:** 24/11/2026 · **Atualizado em:** 25/11/2026 (saneamento da documentação: 192 testes, push e domínio já publicados)
+**Escopo:** Fases 1, 2 e 3 do `ROADMAP_SULSAFE.md` e a distribuição de conteúdo, implementadas, aplicadas ao Supabase e homologadas em produção em 24/11/2026.
 **Referência:** fluxo 3C da MR Tecnologia (homologado em 23/11/2026). A MR não foi alterada.
 
 ---
@@ -80,19 +80,20 @@ Nada é publicado automaticamente. Aluno não vê rascunho (RLS). A liberação 
 | D-TUTOR-12 | `usuario_empresas` (Opção C) pré-aprovada para evolução futura, quando houver multiempresa real. Fora desta etapa. |
 | D-TUTOR-13 | Domínio de e-mail descartado por risco de segurança. |
 | D-TUTOR-14 | Correção da extração de `vault:<nome>`: `substring(... from 7)`; migration 20261124050000 + teste de regressão. |
+| D-TUTOR-15 | Distribuição explícita após a materialização: turma/trilha/aluno, catálogo da NR ou rascunho interno; ementa anexada à descrição e liberação auditada. |
 
 ---
 
 ## 4. Validação local
 
-- `npm test` → **184 testes, 184 passando** (baseline era 135). Inclui 6 testes unitários do parser de JSON, o teste estático que barra o retorno à remoção ancorada de crases, 8 testes da Opção A e o teste de regressão da extração de `vault:<nome>`.
+- `npm test` → **192 testes, 192 passando** (baseline era 135). Inclui 6 testes unitários do parser de JSON, o teste estático que barra o retorno à remoção ancorada de crases, 8 testes da Opção A, o teste de regressão da extração de `vault:<nome>` e os testes de direcionamento/publicação (`tests/tutor-distribuicao.test.mjs`).
 - `npm run check` → 36 arquivos analisados, **0 problemas**.
 - Testes de runtime com PGlite cobrem: isolamento por empresa, RBAC, HITL, duplicata de materialização, NR inválida, ausência de URL, e negação de acesso a aluno.
 - Os 8 testes da Opção A provam que o JWT do convidado (simulado com o mesmo `app_metadata` enviado ao `createUser`) faz `sulsafe_empresa_id()` devolver a empresa correta e que o RLS isola jobs e rascunhos. O Auth real não é simulado por Docker — a integração com a Admin API é verificada por contrato estático da Edge Function.
 
 ### Deploy executado em 24/11/2026 (projeto `acqbidvknbqppkjidvsq`)
 
-- **11 migrations aplicadas**: as 6 pendentes das fases anteriores (20261025… a 20261124000000), as 4 do Tutor e a correção 20261124050000. O `supabase migration list` agora mostra todas as locais com versão remota correspondente.
+- **12 migrations aplicadas**: as 6 pendentes das fases anteriores (20261025… a 20261124000000), as 4 do Tutor, a correção 20261124050000 e a migration de distribuição 20261124100000. O `supabase migration list` agora mostra todas as locais com versão remota correspondente.
 - **2 Edge Functions deployadas e ativas**: `tutor-sulsafe` e `admin-convidar-usuario`.
 - **Vault**: segredo `sulsafe_ia_chave_global` presente (sem valor em log/resposta). `config_ia_professor` configurada com `provedor = gemini`, `modelo = gemini-2.5-flash`, `ativo = true` e referência `vault:sulsafe_ia_chave_global`.
 - **Smoke test REAL**, executado na interface local (`http://localhost:5173/login.html`): empresa `SulSafe Homologacao` cadastrada; assunto "Crie um curso sobre NR 35 para novos colaboradores" com NR-35 detectada; job `73ff5a02-...` → `CONCLUIDO`; ementa "NR-35: Trabalho em Altura - Primeiros Passos na Obra" em `DRAFT`/rascunho; aprovação e materialização em **VIDEOAULA na NR 35**.
@@ -103,14 +104,12 @@ Nada é publicado automaticamente. Aluno não vê rascunho (RLS). A liberação 
 
 ## 5. Estado do deploy e próximos passos
 
-Concluído: migrations, Vault, configuração do provedor, deploy das duas Edge Functions, cadastro da empresa e smoke test REAL com aprovação/materialização.
+Concluído: migrations, Vault, configuração do provedor, deploy das duas Edge Functions, cadastro da empresa, smoke test REAL com aprovação/materialização, push ao GitHub (`2d929cf`), deploy **Ready/Production** na Vercel e front atualizado servido em `https://www.sulsafe.com.br`. A correção do 502/recuo do provedor foi homologada em produção (`ae2567a`) e a distribuição de conteúdo em `2d929cf`.
 
 Pendente para homologação completa:
 
 1. Convidar um usuário de teste em **Modo Deus → Empresas e Convites** e verificar o claim `app_metadata.empresa_id` no primeiro JWT (o e-mail de teste ainda não foi informado).
-2. Validar, com uma conta **Aluno**, que a videoaula materializada não aparece (RLS de `publico = false`).
-3. Publicar no domínio `https://sulsafe.com.br` o front atual — hoje o `js/app.js` servido ainda é a versão antiga, sem o item "Criar com o TUTOR-Sulsafe". O smoke test foi feito no código local (`localhost:5173`).
-4. Push do código-fonte ao GitHub **ainda bloqueado** até autorização expressa do proprietário.
+2. Validar, com uma conta **Aluno**, que o conteúdo direcionado aparece em **Meus Cursos / Trilhas** e que rascunhos/`publico = false` continuam invisíveis (RLS).
 
 ---
 

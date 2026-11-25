@@ -4,7 +4,9 @@
 **Data:** 2026-11-24.
 **Pasta analisada:** `C:\Users\maike\Desktop\sulsafe-estudos-main`.
 **Referências:** OWASP Top 10 (2021), OWASP ASVS v4.0, princípios da LGPD (Lei nº 13.709/2018).
-**Escopo:** 11 migrations Supabase + front-end HTML/JS. MR Tecnologia e OpenMAIC **não foram analisados nem modificados** nesta etapa.
+**Escopo:** 11 migrations Supabase + front-end HTML/JS **no momento da auditoria**. MR Tecnologia e OpenMAIC **não foram analisados nem modificados** nesta etapa.
+
+**Atualização em 25/11/2026:** o escopo implantado passou a 12 migrations (inclui `20261124100000_tutor_distribuicao.sql`) e a DEC-005 foi autorizada e executada. As novas migrations e RPCs do TUTOR-Sulsafe foram revisadas nos testes de regressão (`npm test`: 192 testes); este documento permanece como o registro da auditoria da Etapa 01.
 
 ---
 

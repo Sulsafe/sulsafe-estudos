@@ -18,7 +18,15 @@
 // permitindo homologar o fluxo completo sem chave e sem deploy.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.118.0'
+import { z } from 'npm:zod@4.6.7'
+import { criarContratosFase5 } from '../../../js/tutor-contratos-fase5-core.js'
 import { extrairJson } from './extrair-json.js'
+import {
+    TIPOS_GERACAO_FASE5,
+    gerarStubFase5,
+    processarJobFase5,
+    registrarFalhaJob
+} from './processar-job-fase5.js'
 
 const JSON_HEADERS = {
     'content-type': 'application/json; charset=utf-8',
@@ -42,6 +50,7 @@ type Job = {
     prompt: string
     status: string
     criado_por: string
+    quantidade_questoes: number | null
 }
 
 type ContratoTutor = {
@@ -320,7 +329,7 @@ Deno.serve(async (req: Request) => {
 
         const { data: job, error: erroJob } = await supabase
             .from('ia_jobs')
-            .select('id, tipo, titulo, prompt, status, criado_por')
+            .select('id, tipo, titulo, prompt, status, criado_por, quantidade_questoes')
             .eq('id', jobId)
             .maybeSingle()
 
@@ -338,6 +347,42 @@ Deno.serve(async (req: Request) => {
             p_job_id: job.id,
             p_status: 'PROCESSANDO'
         })
+
+        // Fase 5: dispatcher por tipo. O prompt_base vem do banco (job.prompt,
+        // montado pelo front com a base das 38 NRs); a instrução de saída é
+        // específica por tipo e o contrato é o mesmo Zod da Etapa 1.
+        const contratosFase5 = criarContratosFase5(z)
+        const tipoNormalizado = String(job.tipo || '').trim().toUpperCase()
+        const tipoFase5 = (TIPOS_GERACAO_FASE5 as readonly string[]).includes(tipoNormalizado)
+            ? tipoNormalizado
+            : null
+
+        if (tipoFase5) {
+            const modoStub = Deno.env.get('TUTOR_SULSAFE_STUB') === '1'
+            // Etapa 3.1: a quantidade pedida no form viaja na coluna do job e
+            // chega ao prompt e ao contrato Zod pelo dispatcher da Fase 5.
+            const opcoes = { quantidadeQuestoes: job.quantidade_questoes }
+            const resultado = await processarJobFase5({
+                cliente: supabase,
+                job,
+                validarSaidaIA: contratosFase5.validarSaidaIA,
+                gerador: async (prompt: string) => {
+                    if (modoStub) return gerarStubFase5(tipoFase5, prompt, opcoes)
+
+                    const { data: config, error: erroConfig } = await supabase.rpc('sulsafe_obter_config_ia_worker')
+                    if (erroConfig || !config?.length) {
+                        throw new Error(erroConfig?.message || 'Professor I.A. não configurado')
+                    }
+
+                    const respostaProvedor = await chamarProvedorComRetentativa(config[0] as ConfigIA, prompt)
+                    return extrairJson(extrairTextoDaResposta(respostaProvedor))
+                }
+            })
+
+            return resposta(resultado.resposta, 201)
+        }
+        // Os tipos legados (MATERIA/CURSO/PALESTRA/MATERIAL) seguem exatamente
+        // o fluxo de videoaulas/materiais já homologado abaixo.
 
         let outline: any
         if (Deno.env.get('TUTOR_SULSAFE_STUB') === '1') {
@@ -393,11 +438,9 @@ Deno.serve(async (req: Request) => {
         const mensagem = erro instanceof Error ? erro.message : 'Erro inesperado na geração'
 
         if (jobId) {
-            await supabase.rpc('sulsafe_atualizar_status_ia_job', {
-                p_job_id: jobId,
-                p_status: 'ERRO',
-                p_erro_mensagem: cortar(mensagem, 2000)
-            }).then(() => undefined, () => undefined)
+            // Falha equivale a FAILED: p_status: 'ERRO' e p_erro_mensagem.
+            await registrarFalhaJob(supabase, jobId, mensagem)
+                .then(() => undefined, () => undefined)
         }
 
         return resposta({

@@ -114,7 +114,9 @@ test('helpers do cliente não expõem chave e usam as RPCs corretas', () => {
         assert.ok(cliente.includes(rpc), `RPC ${rpc} ausente no cliente`)
     }
     assert.match(cliente, /functions\.invoke\('tutor-sulsafe'/)
-    assert.doesNotMatch(cliente, /api_key|Bearer /)
+    // Nunca embute chave de API. O bearer do usuário (Etapa 4) é legítimo.
+    assert.doesNotMatch(cliente, /api_key|service_role|SUPABASE_SERVICE_ROLE_KEY/)
+    assert.doesNotMatch(cliente, /Bearer\s+eyJ|Bearer\s+[A-Za-z0-9_-]{40,}/)
 })
 
 test('Edge Function retenta falhas transitórias e usa mensagem pt-BR', () => {

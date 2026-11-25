@@ -1017,6 +1017,283 @@ export async function sbGetProvasPendentes() {
     }
 }
 
+// ============================================================
+// FASE 5 (ETAPA 4) — REVISÃO HITL DE PROVAS GERADAS PELO TUTOR
+// ============================================================
+// A fila continua em sbGetProvasPendentes()? NÃO: aquela é a tabela legada
+// `provas` (entregas de alunos). A fila da I.A. é consumida pela rota
+// /api/tutor/provas-pendentes. Aqui só ficam leitura da revisão, edição e
+// decisão. O gabarito vem de uma RPC restrita a admin/professor.
+// ============================================================
+
+async function tokenSessao() {
+    const { data } = await sb.auth.getSession()
+    return data?.session?.access_token || null
+}
+
+export async function sbGetRevisaoProvaFilaIA() {
+    try {
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch('/api/tutor/provas-pendentes', {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store'
+        })
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível carregar a fila de provas.')
+        return { data: Array.isArray(corpo.provas) ? corpo.provas : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbObterRevisaoProvaIA(provaId) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+        const { data, error } = await sb.rpc('sulsafe_obter_revisao_prova_ia', { p_prova_id: provaId })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbEditarQuestaoProvaIA({ questaoId, enunciado, alternativas, gabarito }) {
+    try {
+        if (!questaoId) throw new Error('Questão não informada.')
+        const { data, error } = await sb.rpc('sulsafe_editar_questao_prova_ia', {
+            p_questao_id: questaoId,
+            p_enunciado: enunciado,
+            p_alternativas: alternativas,
+            p_gabarito: gabarito
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+async function decidirProvaIA(rota, provaId, motivo) {
+    try {
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(`/api/tutor/provas/${encodeURIComponent(provaId)}/${rota}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ motivo: motivo ?? null }),
+            cache: 'no-store'
+        })
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível registrar a decisão.')
+        return { data: corpo, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbAprovarProvaIA(provaId) {
+    return decidirProvaIA('aprovar', provaId, null)
+}
+
+export async function sbRejeitarProvaIA(provaId, motivo) {
+    return decidirProvaIA('rejeitar', provaId, motivo)
+}
+
+// ------------------------------------------------------------
+// FASE 5 (ETAPA 5) — DISTRIBUIÇÃO DIRECIONADA
+// ------------------------------------------------------------
+// Listagens passam pela RPC com o JWT da sessão atual. A distribuição passa
+// pela rota /api/tutor/provas/:id/distribuir para manter o mesmo padrão da
+// aprovação (JWT do chamador + chave anônima no servidor, sem chave de serviço).
+// ------------------------------------------------------------
+
+export async function sbListarProvasAprovadasIA() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_provas_aprovadas_ia')
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbListarDestinosDistribuicaoIA() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_destinos_distribuicao_ia')
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbDistribuirProvaIA({ provaId, destinoTipo, destinoId = null }) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(`/api/tutor/provas/${encodeURIComponent(provaId)}/distribuir`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ destino_tipo: destinoTipo, destino_id: destinoId }),
+            cache: 'no-store'
+        })
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível distribuir a prova.')
+        return { data: corpo, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+// ------------------------------------------------------------
+// FASE 5 (ETAPA 6) — REALIZAÇÃO E CORREÇÃO AUTOMÁTICA
+// ------------------------------------------------------------
+// Leitura via RPC (JWT do aluno). A submissão vai pela rota
+// /api/aluno/provas/:id/submeter, mantendo anon key no servidor.
+// Nenhum helpers desta etapa solicita gabarito ou justificativa.
+// ------------------------------------------------------------
+
+export async function sbListarProvasDistribuidasAluno() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_provas_aluno_ia')
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCarregarCabecalhoProvaAlunoIA(provaId) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+        const { data, error } = await sb.rpc('sulsafe_carregar_cabecalho_prova_aluno_ia', { p_prova_id: provaId })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCarregarQuestoesProvaAlunoIA(provaId) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+        const { data, error } = await sb.rpc('sulsafe_carregar_prova_aluno_ia', { p_prova_id: provaId })
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbSubmeterProvaAlunoIA(provaId, respostas) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+        if (!Array.isArray(respostas) || respostas.length === 0) throw new Error('Responda todas as questões.')
+
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(`/api/aluno/provas/${encodeURIComponent(provaId)}/submeter`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ respostas }),
+            cache: 'no-store'
+        })
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível finalizar a prova.')
+        return { data: corpo, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+// ------------------------------------------------------------
+// FASE 5 (ETAPA 7) — PAINEL DE RESULTADOS DO PROFESSOR
+// ------------------------------------------------------------
+// Listagem, detalhe e correção passam pelas rotas do Tutor com o JWT da
+// sessão. O detalhe é a única forma de o professor receber o gabarito.
+// ------------------------------------------------------------
+
+export async function sbListarResultadosProvaIA(provaId) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(`/api/tutor/provas/${encodeURIComponent(provaId)}/resultados`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store'
+        })
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível carregar os resultados.')
+        return { data: Array.isArray(corpo.resultados) ? corpo.resultados : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCarregarDetalheResultadoIA(provaId, alunoId) {
+    try {
+        if (!provaId || !alunoId) throw new Error('Prova ou aluno não informado.')
+
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(
+            `/api/tutor/provas/${encodeURIComponent(provaId)}/resultados/${encodeURIComponent(alunoId)}`,
+            { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
+        )
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível carregar o detalhe.')
+        return { data: corpo.detalhe || null, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCorrigirRespostaDiscursivaIA({ provaId, alunoId, questaoId, nota } = {}) {
+    try {
+        if (!provaId || !alunoId || !questaoId) throw new Error('Prova, aluno ou questão não informado.')
+
+        const token = await tokenSessao()
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.')
+
+        const resposta = await fetch(
+            `/api/tutor/provas/${encodeURIComponent(provaId)}/resultados/${encodeURIComponent(alunoId)}/corrigir`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ questao_id: questaoId, nota }),
+                cache: 'no-store'
+            }
+        )
+        const corpo = await resposta.json().catch(() => ({}))
+        if (!resposta.ok) throw new Error(corpo?.error?.message || 'Não foi possível registrar a correção.')
+        return { data: corpo, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 export async function sbGetProvasAluno(userId) {
     try {
         const { data, error } = await sb.from('provas')
@@ -1230,14 +1507,20 @@ export async function sbGetRankingAlunos() {
  * Cria um job de geração. `prompt` deve ser montado por montarPromptTutor().
  * @returns { data: string (job_id), error }
  */
-export async function sbCriarJobTutor({ titulo, prompt, tipo, provedor = null }) {
+export async function sbCriarJobTutor({ titulo, prompt, tipo, provedor = null, quantidadeQuestoes = null }) {
     try {
-        const { data, error } = await sb.rpc('sulsafe_criar_ia_job', {
+        const argumentos = {
             p_titulo: titulo,
             p_prompt: prompt,
             p_tipo: tipo,
             p_provedor: provedor
-        })
+        }
+        // Tipos legados seguem chamando a assinatura antiga; somente PROVA
+        // envia o novo parâmetro (aplicável após a migration da Etapa 3.1).
+        if (quantidadeQuestoes !== null && quantidadeQuestoes !== undefined) {
+            argumentos.p_quantidade_questoes = quantidadeQuestoes
+        }
+        const { data, error } = await sb.rpc('sulsafe_criar_ia_job', argumentos)
         if (error) throw error
         return { data, error: null }
     } catch (error) {

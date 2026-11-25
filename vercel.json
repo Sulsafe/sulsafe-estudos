@@ -4,7 +4,11 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
-    { "source": "/login", "destination": "/login.html" }
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/admin/provas-pendentes", "destination": "/login.html" },
+    { "source": "/admin/provas-distribuicao", "destination": "/login.html" },
+    { "source": "/admin/provas-resultados", "destination": "/login.html" },
+    { "source": "/aluno/prova/:id", "destination": "/login.html" }
   ],
   "headers": [
     {

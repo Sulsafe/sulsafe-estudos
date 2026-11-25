@@ -90,22 +90,21 @@ function contextoDasNRs(nrs, limite = 6) {
     ].join('\n')).join('\n\n')
 }
 
-/**
- * Monta o `requirement` enviado ao provedor de IA.
- * Segue a MR: prompt_base + instrução JSON + "Pedido do instrutor: ...".
- */
-export function montarPromptTutor({ assunto, tipo = TIPOS_TUTOR.CURSO, publicoAlvo = '' } = {}) {
+const TIPOS_BASE_FASE5 = Object.freeze([...TIPOS_TUTOR_VALIDOS, 'PROVA'])
+const ROTULOS_BASE_FASE5 = Object.freeze({ ...ROTULOS_TIPO, PROVA: 'prova de múltipla escolha' })
+
+function montarPromptCom({ assunto, tipo, publicoAlvo, tiposPermitidos, rotulos, mensagemTipoInvalido }) {
     if (typeof assunto !== 'string' || assunto.trim().length < LIMITES_TUTOR.assuntoMin ||
         assunto.trim().length > LIMITES_TUTOR.assuntoMax) {
         throw new Error(`Informe o assunto (1 a ${LIMITES_TUTOR.assuntoMax} caracteres).`)
     }
 
-    if (!TIPOS_TUTOR_VALIDOS.includes(tipo)) {
-        throw new Error('Tipo de geração inválido. Use MATERIA, CURSO ou PALESTRA.')
+    if (!tiposPermitidos.includes(tipo)) {
+        throw new Error(mensagemTipoInvalido)
     }
 
     const nrs = extrairNRsDoAssunto(assunto)
-    const rotulo = ROTULOS_TIPO[tipo]
+    const rotulo = rotulos[tipo]
 
     const base = [
         'Você é o TUTOR-Sulsafe, especialista em Segurança do Trabalho e nas 38 Normas Regulamentadoras brasileiras.',
@@ -119,6 +118,38 @@ export function montarPromptTutor({ assunto, tipo = TIPOS_TUTOR.CURSO, publicoAl
     const requirement = `${base}\n\n${INSTRUCAO_JSON_TUTOR}\n\nPedido do instrutor: ${assunto.trim().slice(0, LIMITES_TUTOR.assuntoMax)}`
 
     return requirement.slice(0, LIMITES_TUTOR.promptMax)
+}
+
+/**
+ * Monta o `requirement` enviado ao provedor de IA.
+ * Segue a MR: prompt_base + instrução JSON + "Pedido do instrutor: ...".
+ * Tipos legados permanecem com exatamente o mesmo contrato de antes.
+ */
+export function montarPromptTutor({ assunto, tipo = TIPOS_TUTOR.CURSO, publicoAlvo = '' } = {}) {
+    return montarPromptCom({
+        assunto,
+        tipo,
+        publicoAlvo,
+        tiposPermitidos: TIPOS_TUTOR_VALIDOS,
+        rotulos: ROTULOS_TIPO,
+        mensagemTipoInvalido: 'Tipo de geração inválido. Use MATERIA, CURSO ou PALESTRA.'
+    })
+}
+
+/**
+ * Etapa 3.1: mesma base, mas com PROVA disponível. O prompt devolvido aqui é
+ * o prompt_base persistido em ia_jobs.prompt; a instrução de quantidade é
+ * acrescentada pelo worker (montarPromptFase5).
+ */
+export function montarPromptBaseFase5({ assunto, tipo = TIPOS_TUTOR.CURSO, publicoAlvo = '' } = {}) {
+    return montarPromptCom({
+        assunto,
+        tipo,
+        publicoAlvo,
+        tiposPermitidos: TIPOS_BASE_FASE5,
+        rotulos: ROTULOS_BASE_FASE5,
+        mensagemTipoInvalido: 'Tipo de geração inválido. Use MATERIA, CURSO, PALESTRA ou PROVA.'
+    })
 }
 
 function textoOuFallback(valor, fallback = '') {

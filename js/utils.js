@@ -177,22 +177,25 @@ export function saveCfg() {
     localStorage.setItem('ss_cfg', JSON.stringify(S.cfg))
 }
 
-// Style injection for toast animation
-const style = document.createElement('style')
+// Style injection for toast animation (somente no navegador; o módulo também
+// é importado por testes Node, onde document/window não existem).
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style')
 
-style.textContent = `
-    @keyframes toastIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    style.textContent = `
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-`
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    `
 
-document.head.appendChild(style)
+    document.head.appendChild(style)
+}
 
 // Permission helper
 export function canManage() {
@@ -201,15 +204,17 @@ export function canManage() {
 }
 
 // Expose functions for global use
-window.toast = toast
-window.closeMdl = closeMdl
-window.openMdl = openMdl
-window.nav = nav
-window.enterDash = enterDash
-window.uid = uid
-window.role = role
-window.isAdmin = isAdmin
-window.isProf = isProf
-window.showT = showT
-window.$ = $
-window.$$ = $$
+if (typeof window !== 'undefined') {
+    window.toast = toast
+    window.closeMdl = closeMdl
+    window.openMdl = openMdl
+    window.nav = nav
+    window.enterDash = enterDash
+    window.uid = uid
+    window.role = role
+    window.isAdmin = isAdmin
+    window.isProf = isProf
+    window.showT = showT
+    window.$ = $
+    window.$$ = $$
+}
