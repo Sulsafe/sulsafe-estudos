@@ -85,6 +85,24 @@ export function sanitizar(str) {
     return String(str).replace(/[&<>"']/g, m => map[m])
 }
 
+// Notificações criadas pelo front já chegam escapadas do banco (sbCriarNotificacao
+// aplica sanitizar antes do insert). Decodifica UM nível antes de escapar de novo
+// na renderização, para não mostrar "&quot;" ao usuário. O escape final continua
+// obrigatório porque o escapeHTML não é confiável como sanitizador isolado.
+export function desanitizar(str) {
+    if (!str) return ''
+
+    const map = {
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&#039;': "'"
+    }
+
+    return String(str).replace(/&(?:amp|lt|gt|quot|#039);/g, m => map[m])
+}
+
 // UID
 export function uid() {
     return S.user?.id || null

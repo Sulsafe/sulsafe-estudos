@@ -410,6 +410,14 @@ export async function tutorGerar(event) {
         window.toast?.(tipo === TIPO_TUTOR_PROVA
             ? 'Prova gerada. Revise antes de aprovar.'
             : 'Ementa gerada. Revise antes de aprovar.', 'success')
+
+        // Integração da Etapa 5.2: o resultado do Tutor passa a ser gerenciado
+        // dentro da Área do Professor, na aba correspondente ao tipo gerado.
+        if (tipo === TIPO_TUTOR_PROVA) {
+            nav('professor', { tab: 'provasIa' })
+        } else if (tipo === TIPOS_TUTOR.PALESTRA) {
+            nav('professor', { tab: 'palestras' })
+        }
     } catch (error) {
         handleError(error)
         if (erroSlot) {

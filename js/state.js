@@ -13,6 +13,8 @@ export const S = {
     },
     currentView: 'inicio',
     prevView: null,
+    // Aba ativa da Área do Professor. Pode ser definida por nav('professor', { tab: '...' }).
+    profTabAtiva: 'videoaulas',
     views: {},
     sidebar: null
 }
@@ -118,9 +120,12 @@ export function fmtD(d) {
 }
 
 // Função de navegação global
-export function nav(view) {
+export function nav(view, opcoes = {}) {
     S.prevView = S.currentView
     S.currentView = view
+    if (view === 'professor') {
+        S.profTabAtiva = opcoes?.tab ? String(opcoes.tab) : 'videoaulas'
+    }
     if (S.sidebar) S.sidebar()
     renderView()
 }

@@ -8,6 +8,7 @@
     { "source": "/admin/provas-pendentes", "destination": "/login" },
     { "source": "/admin/provas-distribuicao", "destination": "/login" },
     { "source": "/admin/provas-resultados", "destination": "/login" },
+    { "source": "/aluno/dashboard", "destination": "/login" },
     { "source": "/aluno/prova/:id", "destination": "/login" }
   ],
   "headers": [

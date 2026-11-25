@@ -23,9 +23,13 @@ import {
     sbCriarProvaDirecionada,
     sbGetProvasDirecionadasProfessor,
     sbExcluirProvaDirecionada,
-    sbCriarNotificacao
+    sbCriarNotificacao,
+    sbListarProvasAprovadasIA
 } from '../supabase-client.js'
 import { toast, sanitizar, openMdl, closeMdl, $, $$ } from '../utils.js'
+import { htmlFilaProvasPendentes, iniciarFilaProvasPendentes } from './provas-pendentes-ia.js'
+import { abrirDistribuicaoProvaIA } from './provas-distribuicao-ia.js'
+import { htmlPalestrasProfessor, iniciarPalestrasProfessor } from './palestras-professor.js'
 
 let turmasProfCache = []
 let alunosProfCache = []
@@ -61,6 +65,8 @@ export function vProfessor() {
         <button class="tab-b" onclick="switchProfTab('salas', this)"><i class="fas fa-tower-broadcast"></i> Salas ao Vivo</button>
         <button class="tab-b" onclick="switchProfTab('turmas', this)"><i class="fas fa-users-gear"></i> Turmas/Trilhas</button>
         <button class="tab-b" onclick="switchProfTab('provas', this)"><i class="fas fa-file-signature"></i> Provas</button>
+        <button class="tab-b" onclick="switchProfTab('provasIa', this)"><i class="fas fa-robot"></i> Provas da IA</button>
+        <button class="tab-b" onclick="switchProfTab('palestras', this)"><i class="fas fa-microphone"></i> Palestras</button>
     </div>
 
     <!-- TAB VIDEOAULAS -->
@@ -268,11 +274,35 @@ export function vProfessor() {
             <div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas...</p></div>
         </div>
     </div>
+
+    <!-- TAB PROVAS DA IA (HITL REAPROVEITADO) -->
+    <div id="profTabProvasIa" class="tab-c">
+        <div class="pnl">
+            <div class="pnl-h"><div class="pnl-t"><i class="fas fa-list-check"></i> Fila de revisão da I.A.</div></div>
+            ${htmlFilaProvasPendentes()}
+        </div>
+        <div class="pnl" style="margin-top:16px">
+            <div class="pnl-h"><div class="pnl-t"><i class="fas fa-paper-plane"></i> Provas aprovadas — prontas para distribuir</div></div>
+            <p style="font-size:13px;color:var(--tx2);margin-bottom:14px">
+                Aprovar não entrega a prova. Escolha o destino abaixo; a distribuição continua sendo um ato separado.
+            </p>
+            <div id="listaProvasAprovadasIA" aria-live="polite">
+                <div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas aprovadas...</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB PALESTRAS -->
+    <div id="profTabPalestras" class="tab-c">
+        ${htmlPalestrasProfessor()}
+    </div>
     `
 
     setTimeout(() => {
         carregarAlunosProfessor()
         carregarTurmasParaDestino()
+        if (S.profTabAtiva === 'provasIa') switchProfTab('provasIa')
+        if (S.profTabAtiva === 'palestras') switchProfTab('palestras')
     }, 100)
 
     return h
@@ -283,10 +313,70 @@ function switchProfTab(tabId, btn) {
     $$('.tab-b').forEach(b => { b.classList.remove('on') })
     const tab = document.getElementById(`profTab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`)
     if (tab) tab.classList.add('on')
-    if (btn) btn.classList.add('on')
+
+    // Quando a aba é aberta por redirect (Tutor → professor), não há botão
+    // clicado. Destaca o botão correspondente para não deixar o painel órfão.
+    const alvo = btn || Array.from($$('.tab-b')).find(b => (b.getAttribute('onclick') || '').includes(`'${tabId}'`))
+    if (alvo) alvo.classList.add('on')
 
     if (tabId === 'turmas') carregarTurmasProfessor()
     if (tabId === 'provas') carregarProvasProfessor()
+    if (tabId === 'provasIa') {
+        iniciarFilaProvasPendentes($('#listaProvasPendentesIA'))
+        carregarProvasAprovadasIA()
+    }
+    if (tabId === 'palestras') iniciarPalestrasProfessor()
+}
+
+// Provas aprovadas pelo Tutor são exibidas dentro da própria aba, sem
+// exigir que o professor abra outra tela para distribuí-las.
+async function carregarProvasAprovadasIA() {
+    const lista = $('#listaProvasAprovadasIA')
+    if (!lista) return
+
+    if (lista.dataset.iniciado !== '1') {
+        lista.dataset.iniciado = '1'
+        lista.addEventListener('click', (evento) => {
+            const botao = evento.target.closest('[data-acao="distribuir-prova-ia"]')
+            if (!botao || !lista.contains(botao) || botao.disabled) return
+            abrirDistribuicaoProvaIA(botao.dataset.prova, botao.dataset.titulo, carregarProvasAprovadasIA)
+        })
+    }
+
+    lista.innerHTML = '<div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas aprovadas...</p></div>'
+    const { data, error } = await sbListarProvasAprovadasIA()
+    if (!lista.isConnected) return
+
+    if (error) {
+        lista.innerHTML = `<div class="empty" role="alert"><i class="fas fa-triangle-exclamation"></i><p>${sanitizar(error.message || 'Não foi possível carregar as provas aprovadas.')}</p></div>`
+        return
+    }
+
+    const provas = Array.isArray(data) ? data : []
+    if (provas.length === 0) {
+        lista.innerHTML = '<div class="empty"><i class="fas fa-check-circle"></i><p>Nenhuma prova aprovada aguardando distribuição.</p></div>'
+        return
+    }
+
+    lista.innerHTML = provas.map(prova => {
+        const id = sanitizar(prova.prova_id)
+        const titulo = sanitizar(prova.titulo || 'Prova sem título')
+        const distribuida = Boolean(prova.distribuido_em)
+        return `
+            <article class="pnl" style="margin-bottom:12px">
+                <div class="pnl-h">
+                    <div class="pnl-t"><i class="fas fa-file-lines"></i> ${titulo}</div>
+                    <span class="badge ${distribuida ? 'bg-ok' : 'bg-info'}">${distribuida ? 'Distribuída' : 'Aprovada pela IA'}</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                    <button type="button" class="btn btn-sm btn-p" data-acao="distribuir-prova-ia" data-prova="${id}" data-titulo="${titulo}"
+                        ${distribuida ? 'disabled title="Esta prova já foi distribuída"' : ''}>
+                        <i class="fas fa-paper-plane"></i> ${distribuida ? 'Já distribuída' : 'Distribuir prova'}
+                    </button>
+                </div>
+            </article>
+        `
+    }).join('')
 }
 
 async function profSalvarVideoaula(e) {
@@ -1063,7 +1153,12 @@ function renderProvasProfessor() {
                 return `<tr>
                     <td><strong>${sanitizar(prova.titulo)}</strong>${prova.descricao ? `<br><span style="font-size:11px;color:var(--tx3)">${sanitizar(prova.descricao)}</span>` : ''}</td>
                     <td>${prova.nr_id ? `NR ${sanitizar(String(prova.nr_id))}` : '—'}</td>
-                    <td><span class="badge bg-info">${prova.tipo === 'teste' ? 'Teste' : 'Prova'}</span></td>
+                    <td>
+                        <span class="badge bg-info">${prova.tipo === 'teste' ? 'Teste' : 'Prova'}</span>
+                        ${prova.origem === 'IA_TUTOR'
+                            ? '<br><span class="badge bg-ok" style="margin-top:4px">Aprovada pela IA</span>'
+                            : ''}
+                    </td>
                     <td>${destino}</td>
                     <td>${sanitizar(prazo)}</td>
                     <td>${prova.arquivo_url ? `<a href="${sanitizar(prova.arquivo_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-s"><i class="fas fa-file-pdf"></i> Abrir</a>` : '—'}</td>

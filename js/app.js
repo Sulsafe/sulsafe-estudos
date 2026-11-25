@@ -2,7 +2,7 @@
 // APP - FUNÇÕES PRINCIPAIS DO DASHBOARD & SHELL SPA
 // ============================================================
 
-import { ADMIN_EMAIL, toast, sanitizar, $, $$ } from './utils.js'
+import { ADMIN_EMAIL, toast, sanitizar, desanitizar, $, $$ } from './utils.js'
 import { sbGetNotificacoes, sbMarcarNotificacaoLida, sbMarcarTodasNotificacoesLidas } from './supabase-client.js'
 import { S, role, uid, nav, fmtD } from './state.js'
 import { escapeHTML } from './chat-seguro.js'
@@ -16,7 +16,8 @@ const LINKS_NOTIFICACAO = new Set([
     'inicio', 'videoaulas', 'trilhas', 'materiais', 'salas', 'nrs', 'ia',
     'forum', 'boletim', 'provas', 'certificados', 'admin', 'config',
     'pendentes', 'professor', 'central', 'almoxarifado', 'dossie',
-    'auditoria-dossies'
+    'auditoria-dossies', 'aluno-dashboard', 'tutor',
+    'provas-pendentes-ia', 'provas-distribuicao-ia', 'provas-resultados-ia'
 ])
 
 // Notificações padrão de boas-vindas / fallback se tabela estiver vazia
@@ -117,6 +118,7 @@ export function renderSB() {
 
     const academicItems = []
     if (r === 'aluno') {
+        academicItems.push({ id: 'aluno-dashboard', icon: 'fa-gauge-high', label: 'Meu Painel' })
         academicItems.push({ id: 'dossie', icon: 'fa-id-card', label: 'Meu Dossiê' })
         academicItems.push({ id: 'boletim', icon: 'fa-chart-simple', label: 'Meu Boletim' })
         academicItems.push({ id: 'provas', icon: 'fa-file-pdf', label: 'Minhas Provas' })
@@ -203,8 +205,8 @@ function renderNotificacoesHTML() {
                     <i class="fas ${n.link === 'forum' ? 'fa-comments' : n.link === 'boletim' ? 'fa-chart-line' : 'fa-info-circle'}"></i>
                 </div>
                 <div style="flex:1;min-width:0">
-                    <div class="sb-notif-item-title">${sanitizar(n.titulo)}</div>
-                    <div class="sb-notif-item-msg">${sanitizar(n.mensagem)}</div>
+                    <div class="sb-notif-item-title">${sanitizar(desanitizar(n.titulo))}</div>
+                    <div class="sb-notif-item-msg">${sanitizar(desanitizar(n.mensagem))}</div>
                     <div class="sb-notif-item-time">${timeAgo}</div>
                 </div>
             </div>

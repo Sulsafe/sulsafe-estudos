@@ -296,10 +296,12 @@ function aoSubmeter(evento) {
         toast(aguardaCorrecao ? 'Respostas enviadas com sucesso.' : 'Prova finalizada com sucesso.', 'success')
     }
 
-    modal.addEventListener('click', (evento) => {
+    // openMdl reaproveita #mdlGlobal: usar propriedade evita múltiplas
+    // confirmações acumuladas entre aberturas da confirmação.
+    modal.onclick = (evento) => {
         if (evento.target.closest('[data-acao="cancelar"]')) fecharConfirmacao()
         if (evento.target.closest('[data-acao="confirmar"]')) confirmar()
-    })
+    }
     modal.querySelector('[data-acao="confirmar"]')?.focus()
 }
 

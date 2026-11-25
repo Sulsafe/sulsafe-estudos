@@ -30,6 +30,7 @@ import { vProvasPendentesIA, iniciarProvasPendentesIA } from './views/provas-pen
 import { vProvasDistribuicaoIA, iniciarProvasDistribuicaoIA } from './views/provas-distribuicao-ia.js'
 import { vProvaAlunoIA, iniciarProvaAlunoIA, provaIdDaRota } from './views/prova-aluno-ia.js'
 import { vProvasResultadosIA, iniciarProvasResultadosIA } from './views/provas-resultados-ia.js'
+import { vAlunoDashboard, iniciarAlunoDashboard } from './views/aluno-dashboard.js'
 import { initAccessibility } from './accessibility.js'
 
 // Views de catálogo, player e materiais
@@ -61,6 +62,7 @@ registerView('provas-pendentes-ia', vProvasPendentesIA)
 registerView('provas-distribuicao-ia', vProvasDistribuicaoIA)
 registerView('prova-aluno-ia', vProvaAlunoIA)
 registerView('provas-resultados-ia', vProvasResultadosIA)
+registerView('aluno-dashboard', vAlunoDashboard)
 
 initAccessibility()
 
@@ -72,7 +74,7 @@ window.recuperarSenha = recuperarSenha
 window.showT = showT
 let provaAlunoIdAtual = null
 
-function navComRota(view) {
+function navComRota(view, opcoes = {}) {
     if (view === '/admin/provas-pendentes' || view === 'admin/provas-pendentes') {
         view = 'provas-pendentes-ia'
     }
@@ -86,7 +88,10 @@ function navComRota(view) {
         provaAlunoIdAtual = provaIdDaRota(view)
         view = 'prova-aluno-ia'
     }
-    nav(view)
+    if (view === '/aluno/dashboard' || view === 'aluno/dashboard') {
+        view = 'aluno-dashboard'
+    }
+    nav(view, opcoes)
     if (view === 'provas-pendentes-ia') {
         setTimeout(iniciarProvasPendentesIA, 0)
     }
@@ -98,6 +103,9 @@ function navComRota(view) {
     }
     if (view === 'prova-aluno-ia') {
         setTimeout(() => iniciarProvaAlunoIA(provaAlunoIdAtual), 0)
+    }
+    if (view === 'aluno-dashboard') {
+        setTimeout(iniciarAlunoDashboard, 0)
     }
 }
 
@@ -199,6 +207,9 @@ async function encerrarSessaoInvalida() {
             }
             if (/^\/aluno\/prova\/[^/]+$/i.test(rotaInicial)) {
                 navComRota(rotaInicial)
+            }
+            if (rotaInicial === '/aluno/dashboard') {
+                navComRota('aluno-dashboard')
             }
             return
         }

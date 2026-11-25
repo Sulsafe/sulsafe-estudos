@@ -1649,3 +1649,83 @@ export async function sbPublicarConteudoTutor(conteudoId, publico = true) {
         return { data: null, error }
     }
 }
+
+// ============================================================
+// FASE 5.2 — PALESTRAS (CRIACAO, APROVACAO E DISTRIBUICAO)
+// ============================================================
+// Toda escrita passa por RPC com validacao de empresa no banco.
+// Nenhum segredo de servico e usado no navegador.
+// ------------------------------------------------------------
+
+export async function sbCriarPalestraManual({ titulo, descricao, publicoAlvo, duracaoMin, roteiro } = {}) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_criar_palestra', {
+            p_titulo: titulo,
+            p_descricao: descricao || null,
+            p_publico_alvo: publicoAlvo || null,
+            p_duracao_min: duracaoMin ?? null,
+            p_roteiro: JSON.stringify(Array.isArray(roteiro) ? roteiro : [])
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbCriarPalestraIA(conteudoId) {
+    try {
+        if (!conteudoId) throw new Error('Rascunho da I.A. nao informado.')
+        const { data, error } = await sb.rpc('sulsafe_criar_palestra_ia', { p_conteudo_id: conteudoId })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbAprovarPalestra(palestraId) {
+    try {
+        if (!palestraId) throw new Error('Palestra nao informada.')
+        const { data, error } = await sb.rpc('sulsafe_aprovar_palestra', { p_palestra_id: palestraId })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbDistribuirPalestra({ palestraId, destinoTipo, destinoId } = {}) {
+    try {
+        if (!palestraId || !destinoTipo) throw new Error('Palestra e destino sao obrigatorios.')
+        const { data, error } = await sb.rpc('sulsafe_distribuir_palestra', {
+            p_palestra_id: palestraId,
+            p_destino_tipo: destinoTipo,
+            p_destino_id: destinoId || null
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbListarPalestrasProfessor() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_palestras_professor')
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbListarPalestrasAluno() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_palestras_aluno')
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}

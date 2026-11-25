@@ -46,7 +46,7 @@ export function iniciarProvasDistribuicaoIA() {
     container.addEventListener('click', (evento) => {
         const botao = evento.target.closest('[data-acao="distribuir"]')
         if (botao && container.contains(botao) && !botao.disabled) {
-            abrirDistribuicao(botao.dataset.prova, botao.dataset.titulo)
+            abrirDistribuicaoProvaIA(botao.dataset.prova, botao.dataset.titulo, carregarFila)
             return
         }
         const resultados = evento.target.closest('[data-acao="resultados"]')
@@ -122,7 +122,9 @@ function cardHtml(prova) {
     `
 }
 
-async function abrirDistribuicao(provaId, titulo) {
+// Reutilizada pela aba "Provas da IA" na Área do Professor. O callback
+// permite atualizar a lista correta sem depender da view legada.
+export async function abrirDistribuicaoProvaIA(provaId, titulo, aoConcluir = null) {
     const { data: destinos, error } = await sbListarDestinosDistribuicaoIA()
     if (error) {
         handleError(error)
@@ -199,11 +201,14 @@ async function abrirDistribuicao(provaId, titulo) {
     ouvinteTeclado = fecharComEscape
     document.addEventListener('keydown', fecharComEscape)
 
-    modal.addEventListener('click', (evento) => {
+    // openMdl reaproveita #mdlGlobal. Listeners acumulados distribuiriam a
+    // prova uma vez por abertura do modal; handlers de propriedade substituem
+    // o handler anterior.
+    modal.onclick = (evento) => {
         if (evento.target.closest('[data-acao="fechar"]')) fecharModal()
-    })
+    }
 
-    modal.addEventListener('submit', async (evento) => {
+    modal.onsubmit = async (evento) => {
         evento.preventDefault()
         const formulario = evento.target
         const destinoTipo = String(formulario.elements.destino?.value || '').toUpperCase()
@@ -231,8 +236,9 @@ async function abrirDistribuicao(provaId, titulo) {
             : 'Prova distribuída e alunos notificados.',
         'success')
         fecharModal()
-        carregarFila()
-    })
+        if (typeof aoConcluir === 'function') await aoConcluir()
+        else await carregarFila()
+    }
 
     modal.querySelector('[data-acao="fechar"]')?.focus()
 }

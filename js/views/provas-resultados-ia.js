@@ -299,7 +299,9 @@ async function abrirDetalhe(alunoId, nomeAluno) {
     ouvinteTeclado = fecharComEscape
     document.addEventListener('keydown', fecharComEscape)
 
-    modal.addEventListener('click', async (evento) => {
+    // openMdl reaproveita #mdlGlobal: usar propriedade evita salvar a mesma
+    // correção várias vezes após reabrir o modal de resultados.
+    modal.onclick = async (evento) => {
         if (evento.target.closest('[data-acao="fechar"]')) {
             fecharModal()
             return
@@ -344,7 +346,7 @@ async function abrirDetalhe(alunoId, nomeAluno) {
         toast('Correção registrada com sucesso.', 'success')
         fecharModal()
         carregarResultados()
-    })
+    }
 
     modal.querySelector('[data-acao="fechar"]')?.focus()
 }

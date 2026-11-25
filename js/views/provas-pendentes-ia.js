@@ -41,9 +41,27 @@ export function vProvasPendentesIA() {
     `
 }
 
+// A fila HITL é reutilizada dentro da aba "Provas da IA" da Área do
+// Professor; o container é passado para não depender de um único ponto do DOM.
+export function htmlFilaProvasPendentes() {
+    return `
+        <p style="font-size:13px;color:var(--tx2);margin-bottom:14px">
+            O gabarito só é exibido nesta área restrita. Aprovar não distribui a prova: a escolha do destino acontece na próxima etapa.
+        </p>
+        <div id="listaProvasPendentesIA" aria-live="polite" aria-busy="true">
+            <div class="empty" role="status"><i class="fas fa-spinner fa-spin"></i><p>Carregando provas pendentes...</p></div>
+        </div>
+    `
+}
+
 export function iniciarProvasPendentesIA() {
-    const container = $('#listaProvasPendentesIA')
-    if (!container) return
+    return iniciarFilaProvasPendentes($('#listaProvasPendentesIA'))
+}
+
+export function iniciarFilaProvasPendentes(container = null) {
+    container = container || $('#listaProvasPendentesIA')
+    if (!container || container.dataset.iniciado === '1') return
+    container.dataset.iniciado = '1'
 
     container.addEventListener('click', (evento) => {
         const botao = evento.target.closest('[data-acao]')
@@ -143,7 +161,9 @@ async function abrirRevisao(provaId) {
     ouvinteTeclado = fecharComEscape
     document.addEventListener('keydown', fecharComEscape)
 
-    modal.addEventListener('click', async (evento) => {
+    // openMdl reaproveita #mdlGlobal: usar propriedade evita decidir a mesma
+    // prova várias vezes após reabrir a revisão.
+    modal.onclick = async (evento) => {
         const botao = evento.target.closest('[data-acao]')
         if (!botao || !modal.contains(botao)) return
 
@@ -153,7 +173,7 @@ async function abrirRevisao(provaId) {
         if (acao === 'cancelar-edicao') return recarregarCorpo()
         if (acao === 'salvar-edicao') return salvarEdicao(botao.dataset.questao, botao.closest('[data-form-edicao]'))
         if (acao === 'aprovar' || acao === 'rejeitar') return decidir(acao, botao)
-    })
+    }
 
     modal.querySelector('[data-acao="fechar"]')?.focus()
 
