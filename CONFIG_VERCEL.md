@@ -2,7 +2,7 @@
 
 **Projeto Vercel:** `sulsafe-estudos-4ppk` · **Domínio:** `https://www.sulsafe.com.br`  
 **Data:** 25/11/2026  
-**Status:** guia operacional. Nenhuma variável foi definida e nenhum deploy foi executado nesta tarefa.
+**Status:** **configurado e em produção em 25/11/2026**. `SUPABASE_URL` e `SUPABASE_ANON_KEY` foram adicionadas via `vercel env add` ao escopo `sulsafe-treinamentos-dbc53591`, projeto `sulsafe-estudos-4ppk`, ambiente **Production** (tipo `Secret`, valores ocultos), seguidas de redeploy (`MoVNp6Ymd5jsAsr7oM3pwdc2zZZ4`) com alias em `https://www.sulsafe.com.br`. Nenhum valor real é reproduzido neste arquivo.
 
 ---
 
@@ -53,7 +53,7 @@ A chave **anon** é pública por design; o isolamento é feito por RLS e RPCs `S
 4. Confirme em **Add** / **Save**.
 5. Faça **Redeploy** para que as variáveis cheguem ao runtime: **Deployments** → último deployment → **⋯ → Redeploy**.
 
-> Este passo 5 **não foi executado** nesta tarefa. Novo deploy depende de autorização explícita.
+> **Executado em 25/11/2026** via `vercel redeploy`: deployment `MoVNp6Ymd5jsAsr7oM3pwdc2zZZ4`, `Ready in 12s`, aliased em `www.sulsafe.com.br`. A fila HITL passou a responder HTTP 200.
 
 ---
 

@@ -91,11 +91,11 @@ Arquivo: `CONFIG_VERCEL.md`.
 
 Contém: origem dos valores em **Supabase → Project Settings → API**; passo a passo em **Vercel → Settings → Environment Variables**; variáveis `SUPABASE_URL` e `SUPABASE_ANON_KEY`; ambientes Production/Preview/Development; verificação via `GET /api/tutor/provas-pendentes`; e regras de segurança. **Nenhum valor real de chave foi gravado.**
 
-Nenhuma variável foi definida no painel da Vercel e nenhum redeploy foi feito — o painel não foi acessado, conforme solicitado. A fila HITL continuará retornando `500 CONFIGURACAO_AUSENTE` até que o guia seja executado e o deployment atualizado.
+**Atualização 25/11/2026 (autorização de deploy completo):** as duas variáveis foram cadastradas via CLI (`vercel env add`, escopo `sulsafe-treinamentos-dbc53591`, projeto `sulsafe-estudos-4ppk`, ambiente Production, tipo `Secret`, valores ocultos) e o deployment foi refeito (`MoVNp6Ymd5jsAsr7oM3pwdc2zZZ4`). A fila HITL passou a responder **HTTP 200**. O painel da Vercel não foi usado — a autenticação foi feita por device login na CLI autorizada pelo proprietário.
 
 ---
 
-## 3. Deep links 404 — causa identificada e patch local aplicado
+## 3. Deep links 404 — causa identificada, patch aplicado e publicado
 
 ### 3.1 Evidência
 
@@ -122,9 +122,7 @@ Gates executados após a edição:
 
 ### 3.3 Por que não houve push/deploy
 
-O repositório remoto `Sulsafe/sulsafe-estudos` tem deploy automático da Vercel associado a `main`. Um `git push` publicaria o patch em produção, o que caracterizaria **novo deploy sem autorização explícita**. Portanto o patch ficou apenas local.
-
-Para aplicar em produção, com autorização: commit + `git push origin main` → aguardar o deployment da Vercel → validar as quatro URLs com HTTP 200 e a tela de login/dashboard carregando assets corretamente (`<base href="/">` já presente em `login.html`).
+Inicialmente o patch ficou apenas local porque o remoto publica automaticamente na Vercel. **Com a autorização de deploy completo de 25/11/2026**, o patch foi commitado (`989cdae`) e enviado a `main`; o build automático terminou em `success` (`DZzo4JsLLTSPMX8ahNcMv51ewmC5`) e as quatro URLs passaram a responder HTTP 200 em produção, com a tela carregando corretamente (`<base href="/">` já presente em `login.html`).
 
 ---
 
@@ -132,7 +130,7 @@ Para aplicar em produção, com autorização: commit + `git push origin main` �
 
 - Nenhuma migration nova, nenhuma migration aplicada editada e nenhuma Edge Function redesployada.
 - Nenhuma alteração de lógica da Fase 5; apenas 3 asserts de teste alinhados à correção de configuração do `vercel.json`.
-- Nenhum push ao GitHub e nenhum deploy na Vercel (nenhum `git push`, nenhum `vercel deploy`).
+- Nenhuma migration nova e nenhuma Edge Function redesployada; o único push foi o commit de configuração `989cdae`, com build automático bem-sucedido.
 - Nenhuma credencial real registrada em arquivo, log ou relatório.
 - Nenhuma distribuição da prova para alunos (não há alunos no ambiente).
 
@@ -144,7 +142,7 @@ Para aplicar em produção, com autorização: commit + `git push origin main` �
 |---|---|
 | Prova NR-10 publicada e distributível | ✅ `sulsafe_prova_distribuivel = true` (validado com JWT) |
 | `CONFIG_VERCEL.md` | ✅ Criado, sem chaves reais |
-| Fila HITL em produção | ⏳ Dependente das 2 env vars + redeploy (guia pronto) |
-| Deep links | ⚠️ Causa identificada e patch local pronto; aguardando autorização de push/deploy |
+| Fila HITL em produção | ✅ HTTP 200 após `vercel env add` + redeploy |
+| Deep links | ✅ Patch publicado em `989cdae`; 4 rotas com HTTP 200 em produção |
 | Distribuição com alunos | ⏳ Bloqueada por ausência de alunos em produção |
 | Gates locais | ✅ `npm test` 281/281 · `npm run check` 44/0 |
