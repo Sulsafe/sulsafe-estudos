@@ -748,7 +748,7 @@ test('rota /admin/provas-distribuicao é registrada no SPA e no rewrite', () => 
     assert.match(main, /registerView\(['"]provas-distribuicao-ia['"]/)
     assert.match(main, /\/admin\/provas-distribuicao/)
     assert.match(app, /provas-distribuicao-ia/)
-    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-distribuicao' && r.destination === '/login.html'))
+    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-distribuicao' && r.destination === '/login'))
 })
 
 test('cliente envia JWT do chamador na distribuição e não expõe segredo', () => {

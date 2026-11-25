@@ -514,7 +514,7 @@ test('painel traz tabela, filtro por status, detalhes e correção desabilitada 
     assert.match(main, /registerView\(['"]provas-resultados-ia['"]/)
     assert.match(main, /\/admin\/provas-resultados/)
     assert.match(app, /provas-resultados-ia/)
-    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-resultados' && r.destination === '/login.html'))
+    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-resultados' && r.destination === '/login'))
 })
 
 // ------------------------------------------------------------

@@ -681,7 +681,7 @@ test('rota /admin/provas-pendentes é registrada no SPA e no rewrite', () => {
     assert.match(main, /registerView\(['"]provas-pendentes-ia['"]/)
     assert.match(main, /\/admin\/provas-pendentes/)
     assert.match(app, /provas-pendentes-ia/)
-    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-pendentes' && r.destination === '/login.html'))
+    assert.ok(vercel.rewrites.some(r => r.source === '/admin/provas-pendentes' && r.destination === '/login'))
 })
 
 test('cliente usa JWT do chamador nas ações e não expõe gabarito na fila', () => {
