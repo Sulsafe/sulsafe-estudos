@@ -248,3 +248,5 @@ Fluxo: proposta → decisão registrada → implementação local → testes →
 
 Remover dados de teste em produção (Turma Smoke 5.3, Prova NR-10, Aluno TESTE) e resetar o contador de notificações.
 
+**Status:** CONCLUÍDA em 26/11/2026. Registros de teste removidos em produção em transação única; notificações e eventos de dedupe zerados. Preservados: Admin SulSafe, professor Maikel, biblioteca NR-01…NR-38, vídeo-aula NR 1, prova NR01 e configuração ativa do Professor I.A. Backup lógico prévio mantido fora do repositório. Nenhuma migration, deploy ou código alterado.
+
