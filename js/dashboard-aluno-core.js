@@ -95,7 +95,42 @@ function listaPalestras(palestras) {
     </div>`
 }
 
-export function renderDashboardAlunoHtml({ cursos = [], provas = [], palestras = [] } = {}) {
+function listaCertificados(certificados) {
+    const itens = comoArray(certificados).filter(item => item && !item.revogado)
+    const verTodos = `
+        <a class="btn btn-sm btn-p" href="/aluno/certificados">
+            <i class="fas fa-arrow-right"></i> Ver meus certificados
+        </a>
+    `
+
+    if (!itens.length) {
+        return `
+            <div class="empty" style="margin-bottom:10px">
+                <i class="fas fa-award"></i>
+                <p>Nenhum certificado emitido até o momento.</p>
+            </div>
+            ${verTodos}
+        `
+    }
+
+    return `
+        <div style="display:grid;gap:8px;margin-bottom:10px">
+            ${itens.map(cert => `
+                <article class="pnl" style="margin:0;padding:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <i class="fas fa-award" style="color:var(--dourado)"></i>
+                    <div style="flex:1;min-width:160px">
+                        <div class="pnl-t">${escapeHTML(cert.titulo || 'Certificado SulSafe')}</div>
+                        <small style="color:var(--tx2)">${escapeHTML(cert.emitido_em || '')}</small>
+                    </div>
+                    <a class="btn btn-sm" href="/aluno/certificados">Visualizar</a>
+                </article>
+            `).join('')}
+        </div>
+        ${verTodos}
+    `
+}
+
+export function renderDashboardAlunoHtml({ cursos = [], provas = [], palestras = [], certificados = [] } = {}) {
     let h = `
         <div class="btn-back" onclick="window.nav('inicio')">
             <i class="fas fa-arrow-left"></i> Voltar
@@ -108,5 +143,6 @@ export function renderDashboardAlunoHtml({ cursos = [], provas = [], palestras =
     h += cartao('Meus Cursos', 'fa-graduation-cap', listaCursos(cursos), 'dashCursos')
     h += cartao('Provas Pendentes', 'fa-file-circle-check', listaProvas(provas), 'dashProvas')
     h += cartao('Palestras Disponíveis', 'fa-microphone', listaPalestras(palestras), 'dashPalestras')
+    h += cartao('Meus Certificados', 'fa-award', listaCertificados(certificados), 'dashCertificados')
     return h
 }

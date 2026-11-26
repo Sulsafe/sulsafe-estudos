@@ -1,17 +1,22 @@
 // ============================================================
-// VIEW: PROGRESSO DOS ALUNOS (FASE 5.3)
+// VIEW: PROGRESSO DOS ALUNOS (FASES 5.3 + 5.4)
 // ============================================================
 // Painel do professor/admin com:
 //   * progresso em videoaulas (view_ranking_alunos via RPC),
 //   * status agregado das provas I.A. (aguardando revisão / nota liberada),
 //   * último acesso (auth.users.last_sign_in_at),
-//   * filtros por turma e por aluno aplicados no servidor.
-// A RPC é SECURITY DEFINER e devolve somente alunos da empresa do professor.
+//   * filtros por turma e por aluno aplicados no servidor,
+//   * emissão de certificado (Fase 5.4) somente para alunos aptos.
+// As RPCs são SECURITY DEFINER e devolvem somente alunos da empresa do professor.
 // ============================================================
 
 import { isAdmin, isProf, nav, S } from '../state.js'
-import { sbListarProgressoAlunos } from '../supabase-client.js'
-import { $, handleError, sanitizar } from '../utils.js'
+import {
+    sbEmitirCertificadoRPC,
+    sbListarElegibilidadeCertificados,
+    sbListarProgressoAlunos
+} from '../supabase-client.js'
+import { $, handleError, sanitizar, toast } from '../utils.js'
 import {
     classeStatusProvas,
     filtrarProgresso,
@@ -23,6 +28,7 @@ import {
 } from '../progresso-alunos-core.js'
 
 let linhasCache = []
+let elegibilidadeCache = new Map()
 
 export function vProgressoAlunos() {
     if (!isAdmin() && !isProf()) return nav('inicio')
@@ -113,6 +119,18 @@ async function carregar(popularFiltros) {
     }
 
     linhasCache = Array.isArray(data) ? data : []
+
+    // A elegibilidade é carregada à parte: se falhar, o painel de progresso
+    // continua utilizável e a RPC de emissão ainda valida no servidor.
+    const eleg = await sbListarElegibilidadeCertificados()
+    if (!container.isConnected) return
+    if (eleg.error) {
+        console.warn('Elegibilidade de certificados indisponível:', eleg.error)
+    }
+    elegibilidadeCache = new Map(
+        (eleg.data || []).map(item => [`${item.aluno_id}:${item.nr_id}`, item])
+    )
+
     if (popularFiltros) preencherFiltros(linhasCache)
     renderTabela(linhasCache)
 }
@@ -169,6 +187,41 @@ function renderTabela(linhas) {
         const status = normalizarStatusProvas(item.status_provas)
         const classe = classeStatusProvas(status)
         const ultimoAcesso = sanitizar(formatarUltimoAcesso(item.ultimo_acesso))
+        const alunoId = sanitizar(String(item.aluno_id ?? item.id ?? ''))
+
+        // Fase 5.4: só habilita emissão quando a RPC marcou apto e ainda não
+        // existe certificado ativo para o par aluno/NR.
+        const doAluno = [...elegibilidadeCache.values()].filter(
+            eleg => String(eleg.aluno_id) === String(item.aluno_id ?? item.id)
+        )
+        const emitidos = doAluno.filter(eleg => eleg.certificado_id && !eleg.revogado)
+        const aptos = doAluno.filter(eleg => eleg.apto === true && !eleg.certificado_id)
+        let celulaCertificado = '<span class="badge">Sem NR apto</span>'
+
+        if (emitidos.length > 0) {
+            const nrs = emitidos.map(eleg => `NR-${String(eleg.nr_id).padStart(2, '0')}`).join(', ')
+            celulaCertificado = `
+                <span class="badge bg-ok">Emitido: ${sanitizar(nrs)}</span>
+                <button type="button" class="btn btn-sm" onclick="window.nav('certificados')">
+                    <i class="fas fa-eye"></i> Ver
+                </button>
+            `
+        } else if (aptos.length > 0) {
+            const opcoes = aptos.map(eleg => `
+                <option value="${sanitizar(String(eleg.nr_id))}">
+                    NR-${sanitizar(String(eleg.nr_id).padStart(2, '0'))} · nota ${sanitizar(String(eleg.nota ?? ''))}
+                </option>
+            `).join('')
+            celulaCertificado = `
+                <select id="certNr_${alunoId}" aria-label="NR do certificado de ${nome}" style="max-width:150px;padding:4px">
+                    ${opcoes}
+                </select>
+                <button type="button" class="btn btn-sm btn-p" data-emitir-aluno="${alunoId}"
+                    onclick="window.emitirCertificadoProgresso('${alunoId}', document.getElementById('certNr_${alunoId}').value)">
+                    <i class="fas fa-award"></i> Emitir Certificado
+                </button>
+            `
+        }
 
         return `
             <tr>
@@ -183,6 +236,7 @@ function renderTabela(linhas) {
                 </td>
                 <td><span class="${classe}">${sanitizar(status)}</span></td>
                 <td>${ultimoAcesso}</td>
+                <td style="min-width:220px">${celulaCertificado}</td>
             </tr>
         `
     }).join('')
@@ -199,10 +253,35 @@ function renderTabela(linhas) {
                         <th scope="col" style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">Progresso</th>
                         <th scope="col" style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">Provas</th>
                         <th scope="col" style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">Último acesso</th>
+                        <th scope="col" style="text-align:left;padding:8px;border-bottom:1px solid var(--bd)">Certificado</th>
                     </tr>
                 </thead>
                 <tbody>${linhasHTML}</tbody>
             </table>
         </div>
     `
+}
+
+// A RPC é a única via de emissão; aqui só coletamos os dados da linha.
+window.emitirCertificadoProgresso = async function (alunoId, nrId) {
+    if (!alunoId || !nrId) {
+        toast('Selecione o NR do certificado.', 'err')
+        return
+    }
+
+    try {
+        const { data, error } = await sbEmitirCertificadoRPC({ alunoId, nrId })
+        if (error) throw error
+
+        toast(
+            data?.ja_existia
+                ? 'Certificado já emitido para este NR.'
+                : `Certificado ${String(nrId).padStart(2, '0')} emitido com sucesso!`,
+            'success'
+        )
+        await carregar(false)
+    } catch (error) {
+        console.error('Erro ao emitir certificado:', error)
+        handleError(error)
+    }
 }

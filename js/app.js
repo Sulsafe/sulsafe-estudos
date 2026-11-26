@@ -123,7 +123,7 @@ export function renderSB() {
         academicItems.push({ id: 'dossie', icon: 'fa-id-card', label: 'Meu Dossiê' })
         academicItems.push({ id: 'boletim', icon: 'fa-chart-simple', label: 'Meu Boletim' })
         academicItems.push({ id: 'provas', icon: 'fa-file-pdf', label: 'Minhas Provas' })
-        academicItems.push({ id: 'certificados', icon: 'fa-award', label: 'Certificados' })
+        academicItems.push({ id: 'aluno-certificados', icon: 'fa-award', label: 'Meus Certificados' })
     } else {
         academicItems.push({ id: 'boletim', icon: 'fa-pen-to-square', label: 'Lançar Notas' })
         academicItems.push({ id: 'provas', icon: 'fa-file-signature', label: 'Corrigir Provas' })

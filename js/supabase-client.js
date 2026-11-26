@@ -1336,6 +1336,55 @@ export async function sbListarProgressoAlunos(turmaId = null, alunoId = null) {
     }
 }
 
+// ------------------------------------------------------------
+// FASE 5.4 — CERTIFICADOS
+// ------------------------------------------------------------
+// A emissão passa exclusivamente pela RPC: o INSERT direto continua
+// bloqueado pelo gatilho e pela RLS. Estas funções não alteram o fluxo
+// de provas da Fase 5.3.
+// ------------------------------------------------------------
+
+export async function sbListarElegibilidadeCertificados() {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_elegibilidade_certificados')
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbEmitirCertificadoRPC({ alunoId, nrId, nota = null } = {}) {
+    try {
+        if (!alunoId || !nrId) throw new Error('Aluno ou NR não informado.')
+
+        const { data, error } = await sb.rpc('sulsafe_emitir_certificado', {
+            p_aluno_id: alunoId,
+            p_nr_id: Number(nrId),
+            p_nota: nota === null || nota === undefined || nota === '' ? null : Number(nota)
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbValidarCertificadoPublico(hash) {
+    try {
+        const codigo = String(hash || '').trim()
+        if (!codigo) throw new Error('Informe o hash de validação.')
+
+        const { data, error } = await sb.rpc('sulsafe_validar_certificado_publico', {
+            p_hash: codigo
+        })
+        if (error) throw error
+        return { data, error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 export async function sbNotaAlunoIA(provaId) {
     try {
         if (!provaId) throw new Error('Prova não informada.')

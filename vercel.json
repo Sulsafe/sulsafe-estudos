@@ -9,7 +9,9 @@
     { "source": "/admin/provas-distribuicao", "destination": "/login" },
     { "source": "/admin/provas-resultados", "destination": "/login" },
     { "source": "/aluno/dashboard", "destination": "/login" },
-    { "source": "/aluno/prova/:id", "destination": "/login" }
+    { "source": "/aluno/certificados", "destination": "/login" },
+    { "source": "/aluno/prova/:id", "destination": "/login" },
+    { "source": "/validar/:hash", "destination": "/validar.html" }
   ],
   "headers": [
     {

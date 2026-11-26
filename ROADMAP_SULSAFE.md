@@ -250,3 +250,15 @@ Remover dados de teste em produção (Turma Smoke 5.3, Prova NR-10, Aluno TESTE)
 
 **Status:** CONCLUÍDA em 26/11/2026. Registros de teste removidos em produção em transação única; notificações e eventos de dedupe zerados. Preservados: Admin SulSafe, professor Maikel, biblioteca NR-01…NR-38, vídeo-aula NR 1, prova NR01 e configuração ativa do Professor I.A. Backup lógico prévio mantido fora do repositório. Nenhuma migration, deploy ou código alterado.
 
+---
+
+## 12. Fase 5.4 — Certificados (concluída, somente local)
+
+**Status:** CONCLUÍDA em 26/11/2026 **no repositório local**. Emissão via RPC `SECURITY DEFINER` (`sulsafe_emitir_certificado`), elegibilidade em `sulsafe_listar_elegibilidade_certificados`, validação pública sem dados pessoais em `sulsafe_validar_certificado_publico`, emissão no painel “Progresso dos Alunos”, card e rota `/aluno/certificados`, seção no dossiê, visualização premium com `window.print()` e deep link `/validar/:hash`.
+
+**Regras:** nota mínima 7,0 e 100% das videoaulas publicadas do NR; hash SHA-256; no máximo um certificado ativo por aluno/NR. O fluxo de provas da Fase 5.3 não foi alterado.
+
+**Gates:** `npm test` → 313/313; `npm run check` → 52 arquivos, 0 problemas. Evidência completa em `RELATORIO_FASE5_4.md`.
+
+**Pendente (exige autorização explícita):** aplicar a migration `20261126000000_fase5_4_certificados.sql` ao remoto, publicar no Vercel e fazer smoke. Nada disso foi executado; nenhum dado de teste foi criado em produção.
+

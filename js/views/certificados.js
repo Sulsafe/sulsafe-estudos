@@ -10,6 +10,10 @@ import { gerarCertificadoPDF } from '../certificado-pdf.js'
 
 window.nav = nav
 
+// URL absoluta: a janela de visualização é about:blank e não resolve
+// caminhos relativos como "logo1.png".
+const LOGO_URL = new URL('../../logo1.png', import.meta.url).href
+
 function tituloCertificado(cert) {
     const nrId = Number(cert?.nr_id)
     const nr = NRS.find(item => Number(item.n) === nrId)
@@ -247,6 +251,16 @@ window.visualizarCert = async function (id) {
         const data = formatarData(cert.criado_em)
         const codigo = sanitizar(codigoCertificado(cert))
         const nr = sanitizar(String(cert.nr_id ?? 'Não informada'))
+        const hash = sanitizar(String(cert.hash_validacao || codigo))
+        const notaBruta = cert.nota_final ?? cert.nota
+        const notaTexto = notaBruta === null || notaBruta === undefined || notaBruta === ''
+            ? 'Não informada'
+            : sanitizar(String(notaBruta))
+        const cargaTexto = sanitizar(String(Number(cert.carga_horaria) || 40))
+        const dataEmissao = sanitizar(formatarData(cert.emitido_em || cert.criado_em))
+        const urlValidacao = sanitizar(
+            `${window.location.origin}/validar/${encodeURIComponent(hash)}`
+        )
 
         win.document.open()
         win.document.write(`
@@ -257,63 +271,102 @@ window.visualizarCert = async function (id) {
                 <meta name="viewport" content="width=device-width,initial-scale=1">
                 <title>${titulo}</title>
                 <style>
+                    :root { --verde: #174c36; --ouro: #c6a54b; }
+                    * { box-sizing: border-box; }
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: 'Inter', Arial, sans-serif;
                         display: flex;
                         justify-content: center;
                         align-items: center;
                         min-height: 100vh;
-                        background: #f0f2f5;
+                        background: #eef1f4;
                         margin: 0;
-                        padding: 20px;
-                        box-sizing: border-box;
+                        padding: 28px;
                     }
                     .cert {
+                        position: relative;
                         background: #fff;
-                        padding: 40px;
-                        border: 4px solid #c6a54b;
-                        border-radius: 12px;
+                        padding: 48px 56px;
+                        border: 1px solid var(--ouro);
+                        border-radius: 14px;
+                        box-shadow: 0 18px 60px rgba(23, 76, 54, .14);
                         text-align: center;
-                        max-width: 650px;
+                        max-width: 820px;
                         width: 100%;
-                        box-sizing: border-box;
                     }
-                    h1 { color: #174c36; }
-                    .data { color: #555; overflow-wrap: anywhere; }
-                    .foto {
-                        width: 96px;
-                        height: 120px;
-                        object-fit: cover;
-                        border: 3px solid #c6a54b;
+                    .cert::before {
+                        content: '';
+                        position: absolute;
+                        inset: 10px;
+                        border: 1px solid rgba(198, 165, 75, .5);
                         border-radius: 8px;
-                        margin: 0 auto 14px;
+                        pointer-events: none;
+                    }
+                    .logo { width: 112px; height: auto; display: block; margin: 0 auto 10px; }
+                    .marca { font-size: 11px; letter-spacing: .32em; text-transform: uppercase; color: var(--ouro); font-weight: 700; }
+                    h1 { color: var(--verde); font-size: 26px; margin: 8px 0 18px; }
+                    .linha { height: 1px; background: linear-gradient(90deg, transparent, var(--ouro), transparent); margin: 20px 0; }
+                    .curso { font-size: 19px; font-weight: 700; color: var(--verde); margin: 0 0 6px; }
+                    .aluno { font-family: Georgia, serif; font-size: 30px; margin: 14px 0; color: #1b1b1b; }
+                    .foto {
+                        width: 92px;
+                        height: 116px;
+                        object-fit: cover;
+                        border: 3px solid var(--ouro);
+                        border-radius: 8px;
+                        margin: 6px auto 12px;
                         display: block;
                     }
-                    button {
+                    .dados { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; font-size: 13px; color: #666; }
+                    .dados strong { display: block; color: #222; font-size: 14px; margin-top: 3px; }
+                    .hash { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #555; overflow-wrap: anywhere; margin: 6px 0; }
+                    .acoes { margin-top: 28px; display: flex; gap: 12px; justify-content: center; }
+                    .acoes button, .acoes a {
                         padding: 10px 18px;
                         border: 0;
                         border-radius: 6px;
-                        background: #174c36;
+                        background: var(--verde);
                         color: #fff;
+                        font-size: 13px;
+                        text-decoration: none;
                         cursor: pointer;
                     }
+                    @page { size: A4 landscape; margin: 16mm; }
                     @media print {
-                        body { background: #fff; }
-                        button { display: none; }
+                        body { background: #fff; padding: 0; }
+                        .cert { box-shadow: none; border-width: 2px; max-width: none; }
+                        .acoes { display: none; }
                     }
                 </style>
             </head>
             <body>
                 <main class="cert">
-                    <h1>Certificado SulSafe</h1>
+                    <img class="logo" src="${sanitizar(LOGO_URL)}" alt="SulSafe">
+                    <div class="marca">SulSafe Treinamentos</div>
+                    <h1>Certificado de Conclusão</h1>
                     ${fotoUrl ? `<img class="foto" src="${sanitizar(fotoUrl)}" alt="Foto do aluno">` : ''}
-                    <h2>${titulo}</h2>
-                    <p>Outorgado a <strong>${nome}</strong></p>
-                    ${cpf ? `<p>CPF: ${cpf}</p>` : ''}
-                    <p>NR ${nr} · Emitido em ${data}</p>
-                    <p class="data">Código: ${codigo}</p>
-                    <p>Certificado ativo</p>
-                    <button onclick="window.print()">Imprimir</button>
+                    <p class="curso">${titulo}</p>
+                    <p style="font-size:13px;color:#666;margin:0">Certificamos que</p>
+                    <p class="aluno">${nome}</p>
+                    <p style="font-size:13px;color:#555;max-width:560px;margin:0 auto">
+                        concluiu com aproveitamento o curso acima, com nota final
+                        <strong>${notaTexto}</strong> e carga horária de ${cargaTexto} horas.
+                    </p>
+                    <div class="linha"></div>
+                    <div class="dados">
+                        <div><span>Nota final</span><strong>${notaTexto}</strong></div>
+                        <div><span>Carga horária</span><strong>${cargaTexto} h</strong></div>
+                        <div><span>Data de emissão</span><strong>${dataEmissao}</strong></div>
+                    </div>
+                    <div class="linha"></div>
+                    <p class="hash">Código / hash de validação: ${hash}</p>
+                    <p class="hash">Validação pública: ${urlValidacao}</p>
+                    ${cpf ? `<p class="hash">CPF: ${cpf}</p>` : ''}
+                    <p style="font-size:11px;color:#888;letter-spacing:.08em">CERTIFICADO ATIVO · NR ${nr}</p>
+                    <div class="acoes">
+                        <button type="button" onclick="window.print()"><i class="fas fa-print"></i> Imprimir / Salvar PDF</button>
+                        <a href="${urlValidacao}" target="_blank" rel="noopener">Validar certificado</a>
+                    </div>
                 </main>
             </body>
             </html>

@@ -1,8 +1,9 @@
 // ============================================================
 // VIEW: MEU DOSSIÊ SISTEC
 // ============================================================
-import { S, nav } from '../state.js'
+import { S, NRS, nav } from '../state.js'
 import {
+    sbGetCertificadosAluno,
     sbGetMeuDossie,
     sbGetDocumentosAluno,
     sbSalvarMeuDossie,
@@ -162,7 +163,7 @@ function renderDocumento(doc, item) {
     `
 }
 
-function renderDossie(perfil, documentos, erroDocumentos) {
+function renderDossie(perfil, documentos, erroDocumentos, certificados = []) {
     const wrap = $('#dossieWrap')
     if (!wrap) return
 
@@ -173,6 +174,37 @@ function renderDossie(perfil, documentos, erroDocumentos) {
     const fotoUrl = fotoPath && /^https?:\/\//i.test(fotoPath) ? fotoPath : ''
     const migracao = migrationPendente(erroDocumentos)
     const aprovado = perfilCompleto(perfil) && progresso.docsOk === progresso.docsTotal
+
+    // Fase 5.4: certificados emitidos aparecem no dossiê do aluno.
+    const certsAtivos = (Array.isArray(certificados) ? certificados : [])
+        .filter(cert => cert && cert.revogado !== true)
+    const certificadosHTML = certsAtivos.length
+        ? certsAtivos.map(cert => {
+            const nrId = Number(cert.nr_id)
+            const nr = NRS.find(item => Number(item.n) === nrId)
+            const nome = nr
+                ? `NR-${String(nr.n).padStart(2, '0')} · ${nr.nome}`
+                : 'Certificado SulSafe'
+            const dataBruta = cert.emitido_em || cert.criado_em
+            const data = dataBruta && !Number.isNaN(new Date(dataBruta).getTime())
+                ? new Date(dataBruta).toLocaleDateString('pt-BR')
+                : 'Data não informada'
+            const id = sanitizar(String(cert.id))
+
+            return `
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border:1px solid var(--bd);border-radius:var(--radius);margin-bottom:8px">
+                    <i class="fas fa-award" style="color:var(--dourado)"></i>
+                    <div style="flex:1;min-width:180px">
+                        <strong>${sanitizar(nome)}</strong>
+                        <div style="font-size:12px;color:var(--tx3)">Emitido em ${sanitizar(data)}</div>
+                    </div>
+                    <button type="button" class="btn btn-sm" onclick="window.visualizarCert('${id}')">
+                        <i class="fas fa-eye"></i> Visualizar Certificado
+                    </button>
+                </div>
+            `
+        }).join('')
+        : '<p style="font-size:13px;color:var(--tx2);margin:0">Nenhum certificado emitido até o momento.</p>'
 
     let h = ''
 
@@ -295,6 +327,14 @@ function renderDossie(perfil, documentos, erroDocumentos) {
                 )).join('')}
             </div>
         </div>
+
+        <div class="pnl">
+            <div class="pnl-h">
+                <div class="pnl-t"><i class="fas fa-award"></i> Certificados Emitidos</div>
+                <a class="btn btn-sm" href="/aluno/certificados">Ver meus certificados</a>
+            </div>
+            <div style="padding:14px">${certificadosHTML}</div>
+        </div>
     `
 
     wrap.innerHTML = h
@@ -331,7 +371,10 @@ async function carregarDossie() {
     const { data: documentos, error: documentosError } = await sbGetDocumentosAluno(perfil.id)
     documentosCache = documentos || []
 
-    renderDossie(perfil, documentosCache, documentosError)
+    const { data: certificados, error: certificadosError } = await sbGetCertificadosAluno(perfil.id)
+    if (certificadosError) console.warn('Certificados no dossiê:', certificadosError)
+
+    renderDossie(perfil, documentosCache, documentosError, certificados || [])
 
     const fotoPath = perfil.foto_url ||
         documentosCache.find(doc => doc.tipo_documento === 'FOTO_3X4')?.arquivo_path

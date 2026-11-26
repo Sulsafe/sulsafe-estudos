@@ -32,6 +32,7 @@ import { vProvaAlunoIA, iniciarProvaAlunoIA, provaIdDaRota } from './views/prova
 import { vProvasResultadosIA, iniciarProvasResultadosIA, abrirResultadosProva } from './views/provas-resultados-ia.js'
 import { vProgressoAlunos, iniciarProgressoAlunos } from './views/progresso-alunos.js'
 import { vAlunoDashboard, iniciarAlunoDashboard } from './views/aluno-dashboard.js'
+import { vAlunoCertificados, iniciarAlunoCertificados } from './views/certificados-aluno.js'
 import { initAccessibility } from './accessibility.js'
 
 // Views de catálogo, player e materiais
@@ -65,6 +66,7 @@ registerView('prova-aluno-ia', vProvaAlunoIA)
 registerView('provas-resultados-ia', vProvasResultadosIA)
 registerView('progresso-alunos', vProgressoAlunos)
 registerView('aluno-dashboard', vAlunoDashboard)
+registerView('aluno-certificados', vAlunoCertificados)
 
 initAccessibility()
 
@@ -93,6 +95,9 @@ function navComRota(view, opcoes = {}) {
     if (view === '/aluno/dashboard' || view === 'aluno/dashboard') {
         view = 'aluno-dashboard'
     }
+    if (view === '/aluno/certificados' || view === 'aluno/certificados') {
+        view = 'aluno-certificados'
+    }
     if (view === '/professor/progresso' || view === 'professor/progresso') {
         view = 'progresso-alunos'
     }
@@ -111,6 +116,9 @@ function navComRota(view, opcoes = {}) {
     }
     if (view === 'aluno-dashboard') {
         setTimeout(iniciarAlunoDashboard, 0)
+    }
+    if (view === 'aluno-certificados') {
+        setTimeout(iniciarAlunoCertificados, 0)
     }
     if (view === 'progresso-alunos') {
         setTimeout(iniciarProgressoAlunos, 0)
@@ -219,6 +227,9 @@ async function encerrarSessaoInvalida() {
             }
             if (rotaInicial === '/aluno/dashboard') {
                 navComRota('aluno-dashboard')
+            }
+            if (rotaInicial === '/aluno/certificados') {
+                navComRota('aluno-certificados')
             }
             if (rotaInicial === '/professor/progresso') {
                 navComRota('progresso-alunos')

@@ -5,13 +5,14 @@
 // I.A. e criações manuais são mescladas por ID, sem duplicatas.
 // ============================================================
 
-import { isAdmin, isProf, nav } from '../state.js'
+import { isAdmin, isProf, nav, NRS, fmtD, S } from '../state.js'
 import {
     sbGetVideoaulas,
     sbGetMateriais,
     sbGetProvasDirecionadasAluno,
     sbListarProvasDistribuidasAluno,
-    sbListarPalestrasAluno
+    sbListarPalestrasAluno,
+    sbGetCertificadosAluno
 } from '../supabase-client.js'
 import { renderDashboardAlunoHtml, mesclarProvasAluno } from '../dashboard-aluno-core.js'
 import { $ } from '../utils.js'
@@ -25,17 +26,19 @@ export async function iniciarAlunoDashboard() {
     const app = $('#appContent')
     if (!app) return
 
-    const [videoaulas, materiais, provasIA, provasManuais, palestras] = await Promise.all([
+    const [videoaulas, materiais, provasIA, provasManuais, palestras, certificados] = await Promise.all([
         sbGetVideoaulas(),
         sbGetMateriais(),
         sbListarProvasDistribuidasAluno(),
         sbGetProvasDirecionadasAluno(),
-        sbListarPalestrasAluno()
+        sbListarPalestrasAluno(),
+        sbGetCertificadosAluno(S.user?.id)
     ])
 
     if (provasIA.error) console.error('Dashboard: provas da I.A.', provasIA.error)
     if (provasManuais.error) console.error('Dashboard: provas manuais.', provasManuais.error)
     if (palestras.error) console.error('Dashboard: palestras.', palestras.error)
+    if (certificados.error) console.error('Dashboard: certificados.', certificados.error)
 
     const cursos = [
         ...(Array.isArray(videoaulas.data) ? videoaulas.data : []).map(item => ({
@@ -56,10 +59,27 @@ export async function iniciarAlunoDashboard() {
         manuais: Array.isArray(provasManuais.data) ? provasManuais.data : []
     })
 
+    // A RLS devolve somente certificados do próprio aluno; filtramos revogados
+    // e normalizamos o título para o card "Meus Certificados".
+    const meusCertificados = (Array.isArray(certificados.data) ? certificados.data : [])
+        .filter(cert => cert && cert.revogado !== true)
+        .map(cert => {
+            const nrId = Number(cert.nr_id)
+            const nr = NRS.find(item => Number(item.n) === nrId)
+            return {
+                ...cert,
+                titulo: nr
+                    ? `NR-${String(nr.n).padStart(2, '0')} · ${nr.nome}`
+                    : 'Certificado SulSafe',
+                emitido_em: fmtD(cert.emitido_em || cert.criado_em)
+            }
+        })
+
     const html = renderDashboardAlunoHtml({
         cursos,
         provas,
-        palestras: Array.isArray(palestras.data) ? palestras.data : []
+        palestras: Array.isArray(palestras.data) ? palestras.data : [],
+        certificados: meusCertificados
     })
 
     if (app.isConnected) app.innerHTML = html
