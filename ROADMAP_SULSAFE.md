@@ -242,3 +242,9 @@ Fluxo: proposta → decisão registrada → implementação local → testes →
 
 **Estado atual:** `npm test` → 223/223; `npm run check` → 39 arquivos, 0 problemas. Nenhuma migration foi aplicada ao Supabase remoto, nenhum deploy foi feito na Vercel e nenhum frontend foi alterado. Relatórios: `RELATORIO_FASE5_ETAPA2.md` e `RELATORIO_FASE5_ETAPA3.md`.
 
+---
+
+## 11. Dívida Técnica
+
+Remover dados de teste em produção (Turma Smoke 5.3, Prova NR-10, Aluno TESTE) e resetar o contador de notificações.
+
