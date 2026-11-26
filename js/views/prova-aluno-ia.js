@@ -11,6 +11,8 @@ import { $, toast, handleError, openMdl, closeMdl, sanitizar } from '../utils.js
 let provaAtual = null
 let ouvinteTeclado = null
 
+const MENSAGEM_AGUARDO = 'Prova enviada! Aguarde a revisão do professor para ver sua nota.'
+
 /**
  * Cabeçalho de contexto. Serve para PROVA, PALESTRA e CURSO: o tipo só muda
  * o rótulo exibido, mantendo a mesma identidade verde/escuro da SulSafe.
@@ -23,7 +25,7 @@ export function renderCabecalhoContextoIA(dados = {}) {
     const tempoEstimado = sanitizar(dados.tempoEstimado || '60 minutos')
     const instrucoes = sanitizar(
         dados.instrucoes ||
-        'Leia cada questão com atenção. Ao finalizar, sua nota será calculada automaticamente.'
+        'Leia cada questão com atenção. Ao finalizar, sua nota será calculada pela I.A. e enviada para revisão do professor.'
     )
     const notaMinima = dados.notaMinima === null || dados.notaMinima === undefined || dados.notaMinima === ''
         ? ''
@@ -234,10 +236,7 @@ function aoSubmeter(evento) {
         return
     }
 
-    const temDiscursiva = Boolean(formulario.querySelector('fieldset.questao-ia[data-tipo="DISCURSIVA"]'))
-    const avisoCorrecao = temDiscursiva
-        ? 'As objetivas serão corrigidas automaticamente e as discursivas aguardarão a correção do professor.'
-        : 'Depois disso a nota será calculada automaticamente.'
+    const avisoCorrecao = 'A nota será calculada pela I.A. e enviada para revisão do professor antes de ser exibida.'
 
     const modal = openMdl(`
         <button class="mdl-x" data-acao="cancelar" aria-label="Fechar confirmação"><i class="fas fa-times"></i></button>
@@ -278,22 +277,16 @@ function aoSubmeter(evento) {
         }
 
         const resultado = $('#resultadoProvaAlunoIA')
-        const aguardaCorrecao = String(data?.status || '') === 'EM_ANDAMENTO'
         if (resultado) {
             resultado.innerHTML = `
-                <div class="pnl prova-resultado" role="status">
-                    <div class="pnl-t"><i class="fas fa-graduation-cap"></i> ${aguardaCorrecao ? 'Respostas enviadas' : 'Prova finalizada'}</div>
-                    <p>Nota parcial: <strong>${sanitizar(String(data?.nota ?? 0))}</strong> de ${sanitizar(String(data?.total ?? 0))} pontos.</p>
-                    <p>Acertos: ${sanitizar(String(data?.acertos ?? 0))} de ${sanitizar(String(data?.quantidade_questoes ?? 0))} questões objetivas.</p>
-                    ${aguardaCorrecao
-                        ? '<p>Suas respostas discursivas aguardam a correção do professor.</p>'
-                        : ''}
+                <div class="pnl prova-resultado" role="status" aria-live="polite">
+                    <p>${MENSAGEM_AGUARDO}</p>
                 </div>
             `
         }
         const envio = $('#btnFinalizarProvaIA')
         if (envio) envio.disabled = true
-        toast(aguardaCorrecao ? 'Respostas enviadas com sucesso.' : 'Prova finalizada com sucesso.', 'success')
+        toast(String(data?.mensagem || MENSAGEM_AGUARDO), 'success')
     }
 
     // openMdl reaproveita #mdlGlobal: usar propriedade evita múltiplas

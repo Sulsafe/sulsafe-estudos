@@ -11,7 +11,8 @@ import { S, nav, isAdmin, isProf, fmtD } from '../state.js'
 import {
     sbListarResultadosProvaIA,
     sbCarregarDetalheResultadoIA,
-    sbCorrigirRespostaDiscursivaIA
+    sbCorrigirRespostaDiscursivaIA,
+    sbLiberarNotaIA
 } from '../supabase-client.js'
 import { toast, handleError, openMdl, closeMdl, sanitizar, $ } from '../utils.js'
 import { exportarResultadosCSVIA } from '../exportar-resultados-ia.js'
@@ -26,6 +27,14 @@ const STATUS_PERMITIDOS = new Set(['PENDENTE', 'EM_ANDAMENTO', 'CONCLUIDA'])
 /** Chamado pelo botão "Ver Resultados" da tela de distribuição. */
 export function abrirResultadosProva(provaId) {
     provaSelecionada = provaId || null
+
+    // main.js substitui window.nav pelo wrapper que também dispara o
+    // iniciador da view; usá-lo garante o carregamento dos resultados tanto
+    // pelo botão "Ver Resultados" quanto pelo link da notificação.
+    if (typeof window !== 'undefined' && typeof window.nav === 'function' && window.nav !== nav) {
+        window.nav('provas-resultados-ia')
+        return
+    }
     nav('provas-resultados-ia')
 }
 
@@ -224,6 +233,9 @@ async function abrirDetalhe(alunoId, nomeAluno) {
     const detalhe = data || {}
     const possuiDiscursiva = Boolean(detalhe.possui_discursiva)
     const questoes = Array.isArray(detalhe.questoes) ? detalhe.questoes : []
+    const notaCalculada = detalhe.nota === null || detalhe.nota === undefined
+        ? ''
+        : String(detalhe.nota)
 
     const itens = questoes.map(questao => {
         const numero = sanitizar(String(questao.ordem ?? ''))
@@ -273,14 +285,23 @@ async function abrirDetalhe(alunoId, nomeAluno) {
             <p>${sanitizar(nomeAluno || detalhe.aluno_nome || 'Aluno')} — ${sanitizar(String(detalhe.status || 'PENDENTE'))}</p>
         </div>
         <div style="font-size:14px;margin-bottom:12px">
-            <strong>Nota:</strong> ${detalhe.nota === null || detalhe.nota === undefined ? '—' : sanitizar(String(detalhe.nota))}
+            <strong>Nota calculada pela I.A.:</strong> ${notaCalculada ? sanitizar(notaCalculada) : '—'}
             &nbsp;|&nbsp; <strong>Conclusão:</strong> ${detalhe.concluido_em ? sanitizar(fmtD(detalhe.concluido_em) || '—') : '—'}
         </div>
+        <label style="display:block;font-size:13px;margin-bottom:12px">
+            Nota final a liberar (0 a 10) — ajuste se necessário
+            <input type="number" min="0" max="10" step="0.5" data-nota-final
+                value="${sanitizar(notaCalculada)}"
+                style="display:block;width:140px;margin-top:4px;background:var(--ip);border:1px solid var(--bd);border-radius:var(--r);padding:8px;color:var(--tx)">
+        </label>
         <ol style="font-size:14px">${itens || '<li>Nenhuma questão registrada.</li>'}</ol>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
-            <button class="btn btn-p" type="button" data-acao="salvar-correcao"
+            <button class="btn" type="button" data-acao="salvar-correcao"
                 ${possuiDiscursiva ? '' : 'disabled title="Sem questões discursivas nesta prova"'}>
                 <i class="fas fa-check"></i> Corrigir Discursivas
+            </button>
+            <button class="btn btn-p" type="button" data-acao="liberar-nota">
+                <i class="fas fa-lock-open"></i> Liberar Nota
             </button>
             <button class="btn" type="button" data-acao="fechar" style="background:transparent;border:1px solid var(--bd)">Fechar</button>
         </div>
@@ -299,6 +320,44 @@ async function abrirDetalhe(alunoId, nomeAluno) {
     ouvinteTeclado = fecharComEscape
     document.addEventListener('keydown', fecharComEscape)
 
+    const campoNotaFinal = modal.querySelector('[data-nota-final]')
+    if (campoNotaFinal) {
+        campoNotaFinal.addEventListener('input', () => {
+            campoNotaFinal.dataset.alterado = '1'
+        })
+    }
+
+    const coletarCorrecoes = () => {
+        const correcoes = []
+        for (const campo of modal.querySelectorAll('[data-nota-questao]')) {
+            const texto = String(campo.value ?? '').trim()
+            if (!texto) continue
+            const nota = Number(texto)
+            if (!Number.isFinite(nota) || nota < 0) {
+                toast('Informe notas válidas entre 0 e o peso da questão.', 'err')
+                return null
+            }
+            correcoes.push({ questaoId: campo.dataset.notaQuestao, nota })
+        }
+        return correcoes
+    }
+
+    const salvarCorrecoes = async (correcoes) => {
+        for (const correcao of correcoes) {
+            const { error } = await sbCorrigirRespostaDiscursivaIA({
+                provaId,
+                alunoId,
+                questaoId: correcao.questaoId,
+                nota: correcao.nota
+            })
+            if (error) {
+                handleError(error)
+                return false
+            }
+        }
+        return true
+    }
+
     // openMdl reaproveita #mdlGlobal: usar propriedade evita salvar a mesma
     // correção várias vezes após reabrir o modal de resultados.
     modal.onclick = async (evento) => {
@@ -308,42 +367,60 @@ async function abrirDetalhe(alunoId, nomeAluno) {
         }
 
         const salvar = evento.target.closest('[data-acao="salvar-correcao"]')
-        if (!salvar || salvar.disabled) return
-
-        const campos = modal.querySelectorAll('[data-nota-questao]')
-        const correcoes = []
-        for (const campo of campos) {
-            const texto = String(campo.value ?? '').trim()
-            if (!texto) continue
-            const nota = Number(texto)
-            if (!Number.isFinite(nota) || nota < 0) {
-                toast('Informe notas válidas entre 0 e o peso da questão.', 'err')
+        if (salvar && !salvar.disabled) {
+            const correcoes = coletarCorrecoes()
+            if (correcoes === null) return
+            if (correcoes.length === 0) {
+                toast('Informe ao menos uma nota discursiva.', 'err')
                 return
             }
-            correcoes.push({ questaoId: campo.dataset.notaQuestao, nota })
-        }
 
-        if (correcoes.length === 0) {
-            toast('Informe ao menos uma nota discursiva.', 'err')
+            salvar.disabled = true
+            if (!(await salvarCorrecoes(correcoes))) {
+                salvar.disabled = false
+                return
+            }
+
+            toast('Correção registrada com sucesso.', 'success')
+            fecharModal()
+            carregarResultados()
             return
         }
 
-        salvar.disabled = true
-        for (const correcao of correcoes) {
-            const { error: erroCorrecao } = await sbCorrigirRespostaDiscursivaIA({
-                provaId,
-                alunoId,
-                questaoId: correcao.questaoId,
-                nota: correcao.nota
-            })
-            if (erroCorrecao) {
-                salvar.disabled = false
-                handleError(erroCorrecao)
-                return
-            }
+        const liberar = evento.target.closest('[data-acao="liberar-nota"]')
+        if (!liberar || liberar.disabled) return
+
+        const textoNota = String(campoNotaFinal?.value ?? '').trim()
+        if (!textoNota) {
+            toast('Informe a nota final para liberar.', 'err')
+            return
+        }
+        const notaFinal = Number(textoNota)
+        if (!Number.isFinite(notaFinal) || notaFinal < 0 || notaFinal > 10) {
+            toast('Informe uma nota entre 0 e 10.', 'err')
+            return
         }
 
-        toast('Correção registrada com sucesso.', 'success')
+        liberar.disabled = true
+
+        // Salva correções discursivas pendentes antes de publicar a nota.
+        const correcoes = coletarCorrecoes()
+        if (correcoes === null || !(await salvarCorrecoes(correcoes))) {
+            liberar.disabled = false
+            return
+        }
+
+        // Se o professor não alterou o campo, a RPC usa a nota vigente já
+        // recalculada pelas correções discursivas.
+        const notaParaLiberar = campoNotaFinal?.dataset.alterado === '1' ? notaFinal : null
+        const { error } = await sbLiberarNotaIA({ provaId, alunoId, nota: notaParaLiberar })
+        if (error) {
+            liberar.disabled = false
+            handleError(error)
+            return
+        }
+
+        toast('Nota liberada e publicada no boletim do aluno.', 'success')
         fecharModal()
         carregarResultados()
     }

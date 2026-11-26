@@ -29,7 +29,8 @@ import { vTutor } from './views/tutor.js'
 import { vProvasPendentesIA, iniciarProvasPendentesIA } from './views/provas-pendentes-ia.js'
 import { vProvasDistribuicaoIA, iniciarProvasDistribuicaoIA } from './views/provas-distribuicao-ia.js'
 import { vProvaAlunoIA, iniciarProvaAlunoIA, provaIdDaRota } from './views/prova-aluno-ia.js'
-import { vProvasResultadosIA, iniciarProvasResultadosIA } from './views/provas-resultados-ia.js'
+import { vProvasResultadosIA, iniciarProvasResultadosIA, abrirResultadosProva } from './views/provas-resultados-ia.js'
+import { vProgressoAlunos, iniciarProgressoAlunos } from './views/progresso-alunos.js'
 import { vAlunoDashboard, iniciarAlunoDashboard } from './views/aluno-dashboard.js'
 import { initAccessibility } from './accessibility.js'
 
@@ -62,6 +63,7 @@ registerView('provas-pendentes-ia', vProvasPendentesIA)
 registerView('provas-distribuicao-ia', vProvasDistribuicaoIA)
 registerView('prova-aluno-ia', vProvaAlunoIA)
 registerView('provas-resultados-ia', vProvasResultadosIA)
+registerView('progresso-alunos', vProgressoAlunos)
 registerView('aluno-dashboard', vAlunoDashboard)
 
 initAccessibility()
@@ -91,6 +93,9 @@ function navComRota(view, opcoes = {}) {
     if (view === '/aluno/dashboard' || view === 'aluno/dashboard') {
         view = 'aluno-dashboard'
     }
+    if (view === '/professor/progresso' || view === 'professor/progresso') {
+        view = 'progresso-alunos'
+    }
     nav(view, opcoes)
     if (view === 'provas-pendentes-ia') {
         setTimeout(iniciarProvasPendentesIA, 0)
@@ -107,9 +112,13 @@ function navComRota(view, opcoes = {}) {
     if (view === 'aluno-dashboard') {
         setTimeout(iniciarAlunoDashboard, 0)
     }
+    if (view === 'progresso-alunos') {
+        setTimeout(iniciarProgressoAlunos, 0)
+    }
 }
 
 window.nav = navComRota
+window.abrirResultadosProva = abrirResultadosProva
 window.toast = toast
 window.renderSB = renderSB
 window.renderV = renderV
@@ -210,6 +219,9 @@ async function encerrarSessaoInvalida() {
             }
             if (rotaInicial === '/aluno/dashboard') {
                 navComRota('aluno-dashboard')
+            }
+            if (rotaInicial === '/professor/progresso') {
+                navComRota('progresso-alunos')
             }
             return
         }

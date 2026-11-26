@@ -1294,6 +1294,59 @@ export async function sbCorrigirRespostaDiscursivaIA({ provaId, alunoId, questao
     }
 }
 
+// ------------------------------------------------------------
+// FASE 5.3 — GATE HITL E PROGRESSO DOS ALUNOS
+// ------------------------------------------------------------
+// A nota da I.A. continua calculada no banco; estas RPCs são o único caminho
+// para ajustar/liberar e para o professor consultar o progresso da empresa.
+// ------------------------------------------------------------
+
+export async function sbLiberarNotaIA({ provaId, alunoId, nota } = {}) {
+    try {
+        if (!provaId || !alunoId) throw new Error('Prova ou aluno não informado.')
+        const notaFinal = nota === null || nota === undefined || nota === ''
+            ? null
+            : Number(nota)
+        if (notaFinal !== null && (!Number.isFinite(notaFinal) || notaFinal < 0 || notaFinal > 10)) {
+            throw new Error('Informe uma nota entre 0 e 10.')
+        }
+
+        const { data, error } = await sb.rpc('sulsafe_revisar_liberar_nota_ia', {
+            p_prova_id: provaId,
+            p_aluno_id: alunoId,
+            p_nota: notaFinal
+        })
+        if (error) throw error
+        return { data: Boolean(data), error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbListarProgressoAlunos(turmaId = null, alunoId = null) {
+    try {
+        const { data, error } = await sb.rpc('sulsafe_listar_progresso_alunos', {
+            p_turma_id: turmaId || null,
+            p_aluno_id: alunoId || null
+        })
+        if (error) throw error
+        return { data: Array.isArray(data) ? data : [], error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+export async function sbNotaAlunoIA(provaId) {
+    try {
+        if (!provaId) throw new Error('Prova não informada.')
+        const { data, error } = await sb.rpc('sulsafe_nota_aluno_ia', { p_prova_id: provaId })
+        if (error) throw error
+        return { data: data === null ? null : Number(data), error: null }
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 export async function sbGetProvasAluno(userId) {
     try {
         const { data, error } = await sb.from('provas')

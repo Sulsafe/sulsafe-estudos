@@ -67,6 +67,7 @@ export function vProfessor() {
         <button class="tab-b" onclick="switchProfTab('provas', this)"><i class="fas fa-file-signature"></i> Provas</button>
         <button class="tab-b" onclick="switchProfTab('provasIa', this)"><i class="fas fa-robot"></i> Provas da IA</button>
         <button class="tab-b" onclick="switchProfTab('palestras', this)"><i class="fas fa-microphone"></i> Palestras</button>
+        <button class="tab-b" onclick="window.nav('progresso-alunos')"><i class="fas fa-chart-line"></i> Progresso dos Alunos</button>
     </div>
 
     <!-- TAB VIDEOAULAS -->

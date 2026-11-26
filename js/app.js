@@ -17,7 +17,8 @@ const LINKS_NOTIFICACAO = new Set([
     'forum', 'boletim', 'provas', 'certificados', 'admin', 'config',
     'pendentes', 'professor', 'central', 'almoxarifado', 'dossie',
     'auditoria-dossies', 'aluno-dashboard', 'tutor',
-    'provas-pendentes-ia', 'provas-distribuicao-ia', 'provas-resultados-ia'
+    'provas-pendentes-ia', 'provas-distribuicao-ia', 'provas-resultados-ia',
+    'progresso-alunos'
 ])
 
 // Notificações padrão de boas-vindas / fallback se tabela estiver vazia
@@ -326,7 +327,11 @@ export async function clicarNotificacao(id, linkFallback) {
     }
 
     // O link é sempre validado contra a allowlist, venha do banco ou do fallback.
-    const linkBruto = notif ? notif.link : linkFallback
+    // O sufixo opcional "|parametro" permite links diretos (ex.:
+    // "provas-resultados-ia|<id da prova>") sem aceitar javascript: nem JS inline.
+    const [linkBruto, parametro] = String(notif ? notif.link : linkFallback || '')
+        .split('|')
+        .map(parte => parte.trim())
     const link = LINKS_NOTIFICACAO.has(linkBruto) ? linkBruto : ''
 
     try {
@@ -341,7 +346,24 @@ export async function clicarNotificacao(id, linkFallback) {
     if (dropdown) dropdown.classList.remove('show')
 
     if (link && S.views[link]) {
-        nav(link)
+        if (link === 'provas-resultados-ia' && parametro) {
+            if (typeof window !== 'undefined' && typeof window.abrirResultadosProva === 'function') {
+                window.abrirResultadosProva(parametro)
+            } else if (typeof window !== 'undefined' && typeof window.nav === 'function') {
+                window.nav(link)
+            } else {
+                nav(link)
+            }
+            return
+        }
+
+        // window.nav é o wrapper de rotas de main.js; ele também dispara o
+        // iniciador da view (necessário para carregar listas assíncronas).
+        if (typeof window !== 'undefined' && typeof window.nav === 'function') {
+            window.nav(link)
+        } else {
+            nav(link)
+        }
     }
 }
 

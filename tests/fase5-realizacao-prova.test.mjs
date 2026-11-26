@@ -462,7 +462,9 @@ test('submissão com todas as corretas gera nota máxima e status CONCLUIDA', as
         )
 
         assert.equal(res.statusCode, 200)
-        assert.equal(res.corpo.nota, 6)
+        assert.equal(res.corpo.nota, null)
+        assert.equal(res.corpo.liberado, false)
+        assert.match(res.corpo.mensagem, /Aguarde a revisão do professor/)
         assert.equal(res.corpo.total, 6)
         assert.equal(res.corpo.status, 'CONCLUIDA')
         assert.equal(res.headers['Cache-Control'], 'no-store')
@@ -496,7 +498,9 @@ test('submissão com respostas erradas gera nota zero', async t => {
         )
 
         assert.equal(res.statusCode, 200)
-        assert.equal(res.corpo.nota, 0)
+        assert.equal(res.corpo.nota, null)
+        assert.equal(res.corpo.liberado, false)
+        assert.match(res.corpo.mensagem, /Aguarde a revisão do professor/)
         assert.equal(res.corpo.total, 6)
     })
 })
@@ -516,7 +520,9 @@ test('submissão mista calcula nota parcial pelos pesos', async t => {
         )
 
         assert.equal(res.statusCode, 200)
-        assert.equal(res.corpo.nota, 3)
+        assert.equal(res.corpo.nota, null)
+        assert.equal(res.corpo.liberado, false)
+        assert.match(res.corpo.mensagem, /Aguarde a revisão do professor/)
         assert.equal(res.corpo.total, 6)
     })
 })

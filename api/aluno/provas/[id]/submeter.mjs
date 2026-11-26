@@ -175,14 +175,17 @@ export default async function handlerSubmeter(req, res, clienteInjetado = null) 
             return
         }
 
+        // A nota calculada pela I.A. fica no banco para revisão do professor.
+        // O aluno recebe apenas a confirmação de envio, sem nota nem acertos.
         responder(res, 200, {
             ok: true,
             prova_id: provaId,
-            nota: Number(data?.nota ?? 0),
+            nota: null,
+            liberado: false,
             total: Number(data?.total ?? 0),
-            acertos: Number(data?.acertos ?? 0),
             quantidade_questoes: Number(data?.quantidade_questoes ?? 0),
-            status: String(data?.status || 'CONCLUIDA')
+            status: String(data?.status || 'CONCLUIDA'),
+            mensagem: String(data?.mensagem || 'Prova enviada! Aguarde a revisão do professor para ver sua nota.')
         })
     } catch {
         responder(res, 502, {
