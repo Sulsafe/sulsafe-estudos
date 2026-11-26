@@ -11,7 +11,7 @@
     { "source": "/aluno/dashboard", "destination": "/login" },
     { "source": "/aluno/certificados", "destination": "/login" },
     { "source": "/aluno/prova/:id", "destination": "/login" },
-    { "source": "/validar/:hash", "destination": "/validar.html" }
+    { "source": "/validar/:hash", "destination": "/validar" }
   ],
   "headers": [
     {
